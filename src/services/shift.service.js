@@ -62,7 +62,7 @@ class ShiftService {
       offset,
     });
 
-    return { data: rows, total: count, page, limit };
+    return { data: rows, pagination: { total: count, page, limit, totalPages: Math.ceil(count / limit) } };
   }
 
   async findAll({ startDate, endDate, userId, locationId, status, page = 1, limit = 20 } = {}) {
@@ -87,7 +87,7 @@ class ShiftService {
       offset,
     });
 
-    return { data: rows, total: count, page, limit };
+    return { data: rows, pagination: { total: count, page, limit, totalPages: Math.ceil(count / limit) } };
   }
 
   async getWeekSchedule(startDate, { userId, locationId } = {}) {

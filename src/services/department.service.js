@@ -37,7 +37,7 @@ class DepartmentService {
       offset,
     });
 
-    return { data: rows, total: count, page, limit };
+    return { data: rows, pagination: { total: count, page, limit, totalPages: Math.ceil(count / limit) } };
   }
 
   async update(id, data) {

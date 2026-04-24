@@ -74,7 +74,7 @@ class LeaveService {
       offset,
     });
 
-    return { data: rows, total: count, page, limit };
+    return { data: rows, pagination: { total: count, page, limit, totalPages: Math.ceil(count / limit) } };
   }
 
   async findAll({ status, type, userId, startDate, endDate, page = 1, limit = 20 } = {}) {
@@ -96,7 +96,7 @@ class LeaveService {
       offset,
     });
 
-    return { data: rows, total: count, page, limit };
+    return { data: rows, pagination: { total: count, page, limit, totalPages: Math.ceil(count / limit) } };
   }
 
   async getPending({ page = 1, limit = 20 } = {}) {

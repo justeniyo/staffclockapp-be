@@ -56,7 +56,7 @@ class Pagination {
    */
   static format(items, total, { page, limit }) {
     return {
-      items,
+      data: items,
       pagination: this.buildMeta(total, page, limit),
     };
   }
