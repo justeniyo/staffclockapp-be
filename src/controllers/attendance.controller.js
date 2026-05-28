@@ -1,123 +1,22 @@
+import { wrap } from './base.controller.js';
 import { ApiResponse } from '../utils/index.js';
 import { HTTP_STATUS } from '../config/constants.js';
 
 class AttendanceController {
-  constructor(attendanceService) {
-    this.service = attendanceService;
-  }
+  constructor(service) { this.svc = service; }
 
-  clockIn = async (req, res, next) => {
-    try {
-      const attendance = await this.service.clockIn(req.user.id, {
-        locationId: req.body.locationId,
-        notes: req.body.notes,
-        ipAddress: req.ip,
-      });
-      return ApiResponse.success(res, { data: attendance, message: 'Clocked in', statusCode: HTTP_STATUS.CREATED });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  clockOut = async (req, res, next) => {
-    try {
-      const attendance = await this.service.clockOut(req.user.id);
-      return ApiResponse.success(res, { data: attendance, message: 'Clocked out' });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  startBreak = async (req, res, next) => {
-    try {
-      const attendance = await this.service.startBreak(req.user.id);
-      return ApiResponse.success(res, { data: attendance, message: 'Break started' });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  endBreak = async (req, res, next) => {
-    try {
-      const attendance = await this.service.endBreak(req.user.id);
-      return ApiResponse.success(res, { data: attendance, message: 'Break ended' });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  getStatus = async (req, res, next) => {
-    try {
-      const status = await this.service.getStatus(req.user.id);
-      return ApiResponse.success(res, { data: status, message: 'Status retrieved' });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  getOwn = async (req, res, next) => {
-    try {
-      const result = await this.service.findByUser(req.user.id, req.query);
-      return ApiResponse.paginated(res, result);
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  getByUser = async (req, res, next) => {
-    try {
-      const result = await this.service.findByUser(req.params.userId, req.query);
-      return ApiResponse.paginated(res, result);
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  getAll = async (req, res, next) => {
-    try {
-      const result = await this.service.findAll(req.query);
-      return ApiResponse.paginated(res, result);
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  getById = async (req, res, next) => {
-    try {
-      const attendance = await this.service.findById(req.params.id);
-      return ApiResponse.success(res, { data: attendance });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  update = async (req, res, next) => {
-    try {
-      const attendance = await this.service.update(req.params.id, req.body);
-      return ApiResponse.success(res, { data: attendance, message: 'Updated' });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  delete = async (req, res, next) => {
-    try {
-      const result = await this.service.delete(req.params.id);
-      return ApiResponse.success(res, { message: result.message });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  getSummary = async (req, res, next) => {
-    try {
-      const userId = req.params.userId || req.user.id;
-      const summary = await this.service.getSummary(userId, req.query);
-      return ApiResponse.success(res, { data: summary });
-    } catch (error) {
-      next(error);
-    }
-  };
+  clockIn    = wrap(async (req, res) => ApiResponse.success(res, { data: await this.svc.clockIn(req.user.id, { locationId: req.body.locationId, notes: req.body.notes, ipAddress: req.ip }), message: 'Clocked in', statusCode: HTTP_STATUS.CREATED }));
+  clockOut   = wrap(async (req, res) => ApiResponse.success(res, { data: await this.svc.clockOut(req.user.id), message: 'Clocked out' }));
+  startBreak = wrap(async (req, res) => ApiResponse.success(res, { data: await this.svc.startBreak(req.user.id), message: 'Break started' }));
+  endBreak   = wrap(async (req, res) => ApiResponse.success(res, { data: await this.svc.endBreak(req.user.id), message: 'Break ended' }));
+  getStatus  = wrap(async (req, res) => ApiResponse.success(res, { data: await this.svc.getStatus(req.user.id) }));
+  getOwn     = wrap(async (req, res) => ApiResponse.paginated(res, await this.svc.findByUser(req.user.id, req.query)));
+  getByUser  = wrap(async (req, res) => ApiResponse.paginated(res, await this.svc.findByUser(req.params.userId, req.query)));
+  getAll     = wrap(async (req, res) => ApiResponse.paginated(res, await this.svc.findAll(req.query)));
+  getById    = wrap(async (req, res) => ApiResponse.success(res, { data: await this.svc.findById(req.params.id) }));
+  update     = wrap(async (req, res) => ApiResponse.success(res, { data: await this.svc.update(req.params.id, req.body), message: 'Updated' }));
+  delete     = wrap(async (req, res) => ApiResponse.success(res, await this.svc.delete(req.params.id)));
+  getSummary = wrap(async (req, res) => ApiResponse.success(res, { data: await this.svc.getSummary(req.params.userId || req.user.id, req.query) }));
 }
 
 export default AttendanceController;

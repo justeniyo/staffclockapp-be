@@ -1,12 +1,17 @@
 import { body, param, query } from 'express-validator';
 
 export const clockInValidator = [
-  body('locationId').optional().isInt().withMessage('Location ID must be an integer'),
-  body('notes').optional().isString().trim(),
+  body('locationId')
+    .optional({ values: 'falsy' })
+    .isInt({ min: 1 }).withMessage('Invalid location ID'),
+  body('notes')
+    .optional()
+    .isString().trim()
+    .isLength({ max: 500 }).withMessage('Notes too long'),
 ];
 
 export const attendanceIdValidator = [
-  param('id').isInt().withMessage('Invalid attendance ID'),
+  param('id').isInt({ min: 1 }).withMessage('Invalid attendance ID'),
 ];
 
 export const attendanceQueryValidator = [
@@ -18,8 +23,8 @@ export const attendanceQueryValidator = [
 ];
 
 export const updateAttendanceValidator = [
-  param('id').isInt().withMessage('Invalid attendance ID'),
-  body('notes').optional().isString().trim(),
+  param('id').isInt({ min: 1 }).withMessage('Invalid attendance ID'),
+  body('notes').optional().isString().trim().isLength({ max: 500 }),
   body('clockIn').optional().isISO8601().withMessage('Invalid clock in time'),
   body('clockOut').optional().isISO8601().withMessage('Invalid clock out time'),
 ];

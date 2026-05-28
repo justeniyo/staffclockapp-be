@@ -14,5 +14,4 @@ export {
 export {
   notFoundHandler,
   errorHandler,
-  asyncHandler,
 } from './error.middleware.js';

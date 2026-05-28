@@ -21,7 +21,7 @@ const sequelize = new Sequelize(
     logging: config.database.logging,
     dialectOptions: config.database.dialectOptions || {},
     pool: config.isProduction
-      ? { max: 20, min: 5, acquire: 60000, idle: 10000 }
+      ? { max: 5, min: 0, acquire: 30000, idle: 5000, evict: 1000 }
       : { max: 10, min: 0, acquire: 30000, idle: 10000 },
     define: {
       timestamps: true,

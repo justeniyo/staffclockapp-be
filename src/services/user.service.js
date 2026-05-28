@@ -1,6 +1,9 @@
+import crypto from 'crypto';
 import { Op } from 'sequelize';
 import { AppError, Pagination } from '../utils/index.js';
-import { ROLES } from '../config/constants.js';
+import { ROLES, USER_STATUS } from '../config/constants.js';
+import config from '../config/environment.js';
+import emailService from '../emails/email.service.js';
 
 /**
  * User service
@@ -37,7 +40,27 @@ class UserService {
     // Validate relationships
     await this.validateRelationships(userData);
 
-    const user = await User.create(userData);
+    // Generate verification token (same as auth signup flow)
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationExpires = new Date(
+      Date.now() + config.verification.tokenExpiry * 60 * 60 * 1000
+    );
+
+    const user = await User.create({
+      ...userData,
+      status: USER_STATUS.INACTIVE,
+      isVerified: false,
+      verificationToken,
+      verificationExpires,
+    });
+
+    // Send verification email
+    try {
+      await emailService.sendAccountCreated(user, verificationToken, userData.password);
+    } catch (err) {
+      console.warn('Failed to send verification email:', err.message);
+      // Don't fail user creation if email fails
+    }
 
     return this.findById(user.id);
   }

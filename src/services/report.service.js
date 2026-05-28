@@ -1,72 +1,14 @@
 import ExcelJS from 'exceljs';
 import { Op } from 'sequelize';
 
-class ReportService {
-  constructor(db) {
-    this.db = db;
-  }
-
-  // ============ ATTENDANCE REPORTS ============
-
-  async getAttendanceData({ startDate, endDate, userId, departmentId, locationId }) {
-    const { Attendance, User, Department, Location } = this.db;
-
-    const where = { status: 'clocked_out' };
-    if (startDate) where.clockIn = { [Op.gte]: new Date(startDate) };
-    if (endDate) where.clockIn = { ...where.clockIn, [Op.lte]: new Date(endDate + 'T23:59:59') };
-    if (userId) where.userId = userId;
-
-    const userWhere = {};
-    if (departmentId) userWhere.departmentId = departmentId;
-    if (locationId) userWhere.locationId = locationId;
-
-    const records = await Attendance.findAll({
-      where,
-      include: [
-        {
-          model: User,
-          as: 'user',
-          where: Object.keys(userWhere).length ? userWhere : undefined,
-          attributes: ['id', 'firstName', 'lastName', 'email'],
-          include: [
-            { model: Department, as: 'department', attributes: ['name'] },
-            { model: Location, as: 'location', attributes: ['name'] },
-          ],
-        },
-        { model: Location, as: 'location', attributes: ['name'] },
-      ],
-      order: [['clockIn', 'DESC']],
-    });
-
-    return records.map((r) => ({
-      id: r.id,
-      employeeId: r.user.id,
-      employeeName: `${r.user.firstName} ${r.user.lastName}`,
-      email: r.user.email,
-      department: r.user.department?.name || '',
-      userLocation: r.user.location?.name || '',
-      clockIn: r.clockIn,
-      clockOut: r.clockOut,
-      breakMinutes: r.breakDuration || 0,
-      workMinutes: r.workDuration || 0,
-      workHours: r.workDuration ? (r.workDuration / 60).toFixed(2) : '0',
-      clockLocation: r.location?.name || '',
-      notes: r.notes || '',
-    }));
-  }
-
-  async exportAttendanceCsv(filters) {
-    const data = await this.getAttendanceData(filters);
-    const headers = ['ID', 'Employee ID', 'Employee Name', 'Email', 'Department', 'Location', 'Clock In', 'Clock Out', 'Break (min)', 'Work (min)', 'Work (hrs)', 'Clock Location', 'Notes'];
-    return this.toCsv(headers, data, ['id', 'employeeId', 'employeeName', 'email', 'department', 'userLocation', 'clockIn', 'clockOut', 'breakMinutes', 'workMinutes', 'workHours', 'clockLocation', 'notes']);
-  }
-
-  async exportAttendanceExcel(filters) {
-    const data = await this.getAttendanceData(filters);
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet('Attendance Report');
-
-    sheet.columns = [
+/**
+ * Column definition format: { header, key, width }
+ * Each report type defines its columns once — CSV and Excel both derive from it.
+ */
+const REPORT_SCHEMAS = {
+  attendance: {
+    sheet: 'Attendance Report',
+    columns: [
       { header: 'ID', key: 'id', width: 8 },
       { header: 'Employee ID', key: 'employeeId', width: 12 },
       { header: 'Employee Name', key: 'employeeName', width: 25 },
@@ -80,75 +22,11 @@ class ReportService {
       { header: 'Work (hrs)', key: 'workHours', width: 12 },
       { header: 'Clock Location', key: 'clockLocation', width: 20 },
       { header: 'Notes', key: 'notes', width: 30 },
-    ];
-
-    this.styleHeader(sheet);
-    data.forEach((row) => sheet.addRow(row));
-
-    return workbook.xlsx.writeBuffer();
-  }
-
-  // ============ SHIFT REPORTS ============
-
-  async getShiftData({ startDate, endDate, userId, departmentId, locationId, status }) {
-    const { Shift, User, Department, Location } = this.db;
-
-    const where = {};
-    if (startDate) where.date = { [Op.gte]: startDate };
-    if (endDate) where.date = { ...where.date, [Op.lte]: endDate };
-    if (userId) where.userId = userId;
-    if (status) where.status = status;
-    if (locationId) where.locationId = locationId;
-
-    const userWhere = {};
-    if (departmentId) userWhere.departmentId = departmentId;
-
-    const records = await Shift.findAll({
-      where,
-      include: [
-        {
-          model: User,
-          as: 'user',
-          where: Object.keys(userWhere).length ? userWhere : undefined,
-          attributes: ['id', 'firstName', 'lastName', 'email'],
-          include: [{ model: Department, as: 'department', attributes: ['name'] }],
-        },
-        { model: Location, as: 'location', attributes: ['name'] },
-        { model: User, as: 'creator', attributes: ['firstName', 'lastName'] },
-      ],
-      order: [['date', 'ASC'], ['startTime', 'ASC']],
-    });
-
-    return records.map((r) => ({
-      id: r.id,
-      employeeId: r.user.id,
-      employeeName: `${r.user.firstName} ${r.user.lastName}`,
-      email: r.user.email,
-      department: r.user.department?.name || '',
-      date: r.date,
-      startTime: r.startTime,
-      endTime: r.endTime,
-      breakMinutes: r.breakMinutes,
-      scheduledHours: this.calculateShiftHours(r.startTime, r.endTime, r.breakMinutes),
-      location: r.location?.name || '',
-      status: r.status,
-      createdBy: r.creator ? `${r.creator.firstName} ${r.creator.lastName}` : '',
-      notes: r.notes || '',
-    }));
-  }
-
-  async exportShiftsCsv(filters) {
-    const data = await this.getShiftData(filters);
-    const headers = ['ID', 'Employee ID', 'Employee Name', 'Email', 'Department', 'Date', 'Start', 'End', 'Break (min)', 'Scheduled (hrs)', 'Location', 'Status', 'Created By', 'Notes'];
-    return this.toCsv(headers, data, ['id', 'employeeId', 'employeeName', 'email', 'department', 'date', 'startTime', 'endTime', 'breakMinutes', 'scheduledHours', 'location', 'status', 'createdBy', 'notes']);
-  }
-
-  async exportShiftsExcel(filters) {
-    const data = await this.getShiftData(filters);
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet('Shift Report');
-
-    sheet.columns = [
+    ],
+  },
+  shifts: {
+    sheet: 'Shift Report',
+    columns: [
       { header: 'ID', key: 'id', width: 8 },
       { header: 'Employee ID', key: 'employeeId', width: 12 },
       { header: 'Employee Name', key: 'employeeName', width: 25 },
@@ -163,74 +41,11 @@ class ReportService {
       { header: 'Status', key: 'status', width: 12 },
       { header: 'Created By', key: 'createdBy', width: 20 },
       { header: 'Notes', key: 'notes', width: 30 },
-    ];
-
-    this.styleHeader(sheet);
-    data.forEach((row) => sheet.addRow(row));
-
-    return workbook.xlsx.writeBuffer();
-  }
-
-  // ============ LEAVE REPORTS ============
-
-  async getLeaveData({ startDate, endDate, userId, departmentId, status, type }) {
-    const { Leave, User, Department } = this.db;
-
-    const where = {};
-    if (startDate) where.startDate = { [Op.gte]: startDate };
-    if (endDate) where.endDate = { [Op.lte]: endDate };
-    if (userId) where.userId = userId;
-    if (status) where.status = status;
-    if (type) where.type = type;
-
-    const userWhere = {};
-    if (departmentId) userWhere.departmentId = departmentId;
-
-    const records = await Leave.findAll({
-      where,
-      include: [
-        {
-          model: User,
-          as: 'user',
-          where: Object.keys(userWhere).length ? userWhere : undefined,
-          attributes: ['id', 'firstName', 'lastName', 'email'],
-          include: [{ model: Department, as: 'department', attributes: ['name'] }],
-        },
-        { model: User, as: 'reviewer', attributes: ['firstName', 'lastName'] },
-      ],
-      order: [['startDate', 'DESC']],
-    });
-
-    return records.map((r) => ({
-      id: r.id,
-      employeeId: r.user.id,
-      employeeName: `${r.user.firstName} ${r.user.lastName}`,
-      email: r.user.email,
-      department: r.user.department?.name || '',
-      type: r.type,
-      startDate: r.startDate,
-      endDate: r.endDate,
-      totalDays: r.totalDays,
-      status: r.status,
-      reason: r.reason || '',
-      reviewedBy: r.reviewer ? `${r.reviewer.firstName} ${r.reviewer.lastName}` : '',
-      reviewedAt: r.reviewedAt || '',
-      reviewNotes: r.reviewNotes || '',
-    }));
-  }
-
-  async exportLeavesCsv(filters) {
-    const data = await this.getLeaveData(filters);
-    const headers = ['ID', 'Employee ID', 'Employee Name', 'Email', 'Department', 'Type', 'Start Date', 'End Date', 'Total Days', 'Status', 'Reason', 'Reviewed By', 'Reviewed At', 'Review Notes'];
-    return this.toCsv(headers, data, ['id', 'employeeId', 'employeeName', 'email', 'department', 'type', 'startDate', 'endDate', 'totalDays', 'status', 'reason', 'reviewedBy', 'reviewedAt', 'reviewNotes']);
-  }
-
-  async exportLeavesExcel(filters) {
-    const data = await this.getLeaveData(filters);
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet('Leave Report');
-
-    sheet.columns = [
+    ],
+  },
+  leaves: {
+    sheet: 'Leave Report',
+    columns: [
       { header: 'ID', key: 'id', width: 8 },
       { header: 'Employee ID', key: 'employeeId', width: 12 },
       { header: 'Employee Name', key: 'employeeName', width: 25 },
@@ -245,76 +60,11 @@ class ReportService {
       { header: 'Reviewed By', key: 'reviewedBy', width: 20 },
       { header: 'Reviewed At', key: 'reviewedAt', width: 20 },
       { header: 'Review Notes', key: 'reviewNotes', width: 30 },
-    ];
-
-    this.styleHeader(sheet);
-    data.forEach((row) => sheet.addRow(row));
-
-    return workbook.xlsx.writeBuffer();
-  }
-
-  // ============ SUMMARY REPORTS ============
-
-  async getAttendanceSummary({ startDate, endDate, departmentId }) {
-    const { Attendance, User, Department } = this.db;
-
-    const where = { status: 'clocked_out' };
-    if (startDate) where.clockIn = { [Op.gte]: new Date(startDate) };
-    if (endDate) where.clockIn = { ...where.clockIn, [Op.lte]: new Date(endDate + 'T23:59:59') };
-
-    const userWhere = {};
-    if (departmentId) userWhere.departmentId = departmentId;
-
-    const records = await Attendance.findAll({
-      where,
-      include: [{
-        model: User,
-        as: 'user',
-        where: Object.keys(userWhere).length ? userWhere : undefined,
-        attributes: ['id', 'firstName', 'lastName'],
-        include: [{ model: Department, as: 'department', attributes: ['name'] }],
-      }],
-      attributes: ['userId', 'workDuration', 'breakDuration'],
-    });
-
-    // Group by user
-    const userSummary = {};
-    records.forEach((r) => {
-      const key = r.userId;
-      if (!userSummary[key]) {
-        userSummary[key] = {
-          employeeId: r.user.id,
-          employeeName: `${r.user.firstName} ${r.user.lastName}`,
-          department: r.user.department?.name || '',
-          totalDays: 0,
-          totalWorkMinutes: 0,
-          totalBreakMinutes: 0,
-        };
-      }
-      userSummary[key].totalDays++;
-      userSummary[key].totalWorkMinutes += r.workDuration || 0;
-      userSummary[key].totalBreakMinutes += r.breakDuration || 0;
-    });
-
-    return Object.values(userSummary).map((u) => ({
-      ...u,
-      totalWorkHours: (u.totalWorkMinutes / 60).toFixed(2),
-      avgWorkHoursPerDay: u.totalDays ? (u.totalWorkMinutes / 60 / u.totalDays).toFixed(2) : '0',
-    }));
-  }
-
-  async exportSummaryCsv(filters) {
-    const data = await this.getAttendanceSummary(filters);
-    const headers = ['Employee ID', 'Employee Name', 'Department', 'Total Days', 'Total Work (min)', 'Total Work (hrs)', 'Avg Hours/Day', 'Total Break (min)'];
-    return this.toCsv(headers, data, ['employeeId', 'employeeName', 'department', 'totalDays', 'totalWorkMinutes', 'totalWorkHours', 'avgWorkHoursPerDay', 'totalBreakMinutes']);
-  }
-
-  async exportSummaryExcel(filters) {
-    const data = await this.getAttendanceSummary(filters);
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet('Attendance Summary');
-
-    sheet.columns = [
+    ],
+  },
+  summary: {
+    sheet: 'Attendance Summary',
+    columns: [
       { header: 'Employee ID', key: 'employeeId', width: 12 },
       { header: 'Employee Name', key: 'employeeName', width: 25 },
       { header: 'Department', key: 'department', width: 20 },
@@ -323,49 +73,178 @@ class ReportService {
       { header: 'Total Work (hrs)', key: 'totalWorkHours', width: 15 },
       { header: 'Avg Hours/Day', key: 'avgWorkHoursPerDay', width: 15 },
       { header: 'Total Break (min)', key: 'totalBreakMinutes', width: 15 },
-    ];
+    ],
+  },
+};
 
-    this.styleHeader(sheet);
-    data.forEach((row) => sheet.addRow(row));
+// ── Helpers ──
 
-    return workbook.xlsx.writeBuffer();
+const fullName = (u) => `${u.firstName} ${u.lastName}`;
+const optName = (obj) => obj?.name || '';
+const escapeCsv = (val) => {
+  if (val == null) return '';
+  const s = String(val);
+  return /[,"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+};
+const calcShiftHrs = (start, end, brk) => {
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  return (((eh * 60 + em) - (sh * 60 + sm) - brk) / 60).toFixed(2);
+};
+const dateRange = (where, field, start, end, isTimestamp = false) => {
+  if (start) where[field] = { [Op.gte]: isTimestamp ? new Date(start) : start };
+  if (end) where[field] = { ...where[field], [Op.lte]: isTimestamp ? new Date(end + 'T23:59:59') : end };
+};
+
+class ReportService {
+  constructor(db) { this.db = db; }
+
+  // ── Generic export: one method handles both formats for any report type ──
+
+  async export(type, filters, format = 'csv') {
+    const data = await this[`get${type.charAt(0).toUpperCase() + type.slice(1)}Data`](filters);
+    return format === 'excel' ? this.toExcel(type, data) : this.toCsv(type, data);
   }
 
-  // ============ HELPER METHODS ============
+  toCsv(type, data) {
+    const { columns } = REPORT_SCHEMAS[type];
+    const keys = columns.map((c) => c.key);
+    const header = columns.map((c) => c.header).join(',');
+    return [header, ...data.map((row) => keys.map((k) => escapeCsv(row[k])).join(','))].join('\n');
+  }
 
-  toCsv(headers, data, fields) {
-    const escape = (val) => {
-      if (val === null || val === undefined) return '';
-      const str = String(val);
-      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-        return `"${str.replace(/"/g, '""')}"`;
-      }
-      return str;
-    };
+  async toExcel(type, data) {
+    const schema = REPORT_SCHEMAS[type];
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet(schema.sheet);
+    ws.columns = schema.columns;
+    const hdr = ws.getRow(1);
+    hdr.font = { bold: true };
+    hdr.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
+    hdr.alignment = { horizontal: 'center' };
+    data.forEach((row) => ws.addRow(row));
+    return wb.xlsx.writeBuffer();
+  }
 
-    const rows = [headers.join(',')];
-    data.forEach((row) => {
-      rows.push(fields.map((f) => escape(row[f])).join(','));
+  // ── Data fetchers ──
+
+  async getAttendanceData({ startDate, endDate, userId, departmentId, locationId }) {
+    const { Attendance, User, Department, Location } = this.db;
+    const where = { status: 'clocked_out' };
+    dateRange(where, 'clockIn', startDate, endDate, true);
+    if (userId) where.userId = userId;
+
+    const userWhere = {};
+    if (departmentId) userWhere.departmentId = departmentId;
+    if (locationId) userWhere.locationId = locationId;
+
+    const rows = await Attendance.findAll({
+      where,
+      include: [
+        { model: User, as: 'user', ...(Object.keys(userWhere).length && { where: userWhere }), attributes: ['id', 'firstName', 'lastName', 'email'],
+          include: [{ model: Department, as: 'department', attributes: ['name'] }, { model: Location, as: 'location', attributes: ['name'] }] },
+        { model: Location, as: 'location', attributes: ['name'] },
+      ],
+      order: [['clockIn', 'DESC']],
     });
 
-    return rows.join('\n');
+    return rows.map((r) => ({
+      id: r.id, employeeId: r.user.id, employeeName: fullName(r.user), email: r.user.email,
+      department: optName(r.user.department), userLocation: optName(r.user.location),
+      clockIn: r.clockIn, clockOut: r.clockOut, breakMinutes: r.breakDuration || 0,
+      workMinutes: r.workDuration || 0, workHours: r.workDuration ? (r.workDuration / 60).toFixed(2) : '0',
+      clockLocation: optName(r.location), notes: r.notes || '',
+    }));
   }
 
-  styleHeader(sheet) {
-    sheet.getRow(1).font = { bold: true };
-    sheet.getRow(1).fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFE0E0E0' },
-    };
-    sheet.getRow(1).alignment = { horizontal: 'center' };
+  async getShiftsData({ startDate, endDate, userId, departmentId, locationId, status }) {
+    const { Shift, User, Department, Location } = this.db;
+    const where = {};
+    dateRange(where, 'date', startDate, endDate);
+    if (userId) where.userId = userId;
+    if (status) where.status = status;
+    if (locationId) where.locationId = locationId;
+
+    const userWhere = {};
+    if (departmentId) userWhere.departmentId = departmentId;
+
+    const rows = await Shift.findAll({
+      where,
+      include: [
+        { model: User, as: 'user', ...(Object.keys(userWhere).length && { where: userWhere }), attributes: ['id', 'firstName', 'lastName', 'email'],
+          include: [{ model: Department, as: 'department', attributes: ['name'] }] },
+        { model: Location, as: 'location', attributes: ['name'] },
+        { model: User, as: 'creator', attributes: ['firstName', 'lastName'] },
+      ],
+      order: [['date', 'ASC'], ['startTime', 'ASC']],
+    });
+
+    return rows.map((r) => ({
+      id: r.id, employeeId: r.user.id, employeeName: fullName(r.user), email: r.user.email,
+      department: optName(r.user.department), date: r.date, startTime: r.startTime, endTime: r.endTime,
+      breakMinutes: r.breakMinutes, scheduledHours: calcShiftHrs(r.startTime, r.endTime, r.breakMinutes),
+      location: optName(r.location), status: r.status, createdBy: r.creator ? fullName(r.creator) : '', notes: r.notes || '',
+    }));
   }
 
-  calculateShiftHours(startTime, endTime, breakMinutes) {
-    const [startH, startM] = startTime.split(':').map(Number);
-    const [endH, endM] = endTime.split(':').map(Number);
-    const totalMinutes = (endH * 60 + endM) - (startH * 60 + startM) - breakMinutes;
-    return (totalMinutes / 60).toFixed(2);
+  async getLeavesData({ startDate, endDate, userId, departmentId, status, type }) {
+    const { Leave, User, Department } = this.db;
+    const where = {};
+    if (startDate) where.startDate = { [Op.gte]: startDate };
+    if (endDate) where.endDate = { [Op.lte]: endDate };
+    if (userId) where.userId = userId;
+    if (status) where.status = status;
+    if (type) where.type = type;
+
+    const userWhere = {};
+    if (departmentId) userWhere.departmentId = departmentId;
+
+    const rows = await Leave.findAll({
+      where,
+      include: [
+        { model: User, as: 'user', ...(Object.keys(userWhere).length && { where: userWhere }), attributes: ['id', 'firstName', 'lastName', 'email'],
+          include: [{ model: Department, as: 'department', attributes: ['name'] }] },
+        { model: User, as: 'reviewer', attributes: ['firstName', 'lastName'] },
+      ],
+      order: [['startDate', 'DESC']],
+    });
+
+    return rows.map((r) => ({
+      id: r.id, employeeId: r.user.id, employeeName: fullName(r.user), email: r.user.email,
+      department: optName(r.user.department), type: r.type, startDate: r.startDate, endDate: r.endDate,
+      totalDays: r.totalDays, status: r.status, reason: r.reason || '',
+      reviewedBy: r.reviewer ? fullName(r.reviewer) : '', reviewedAt: r.reviewedAt || '', reviewNotes: r.reviewNotes || '',
+    }));
+  }
+
+  async getSummaryData({ startDate, endDate, departmentId }) {
+    const { Attendance, User, Department } = this.db;
+    const where = { status: 'clocked_out' };
+    dateRange(where, 'clockIn', startDate, endDate, true);
+
+    const userWhere = {};
+    if (departmentId) userWhere.departmentId = departmentId;
+
+    const rows = await Attendance.findAll({
+      where,
+      include: [{ model: User, as: 'user', ...(Object.keys(userWhere).length && { where: userWhere }), attributes: ['id', 'firstName', 'lastName'],
+        include: [{ model: Department, as: 'department', attributes: ['name'] }] }],
+      attributes: ['userId', 'workDuration', 'breakDuration'],
+    });
+
+    const map = {};
+    for (const r of rows) {
+      const s = map[r.userId] ??= { employeeId: r.user.id, employeeName: fullName(r.user), department: optName(r.user.department), totalDays: 0, totalWorkMinutes: 0, totalBreakMinutes: 0 };
+      s.totalDays++;
+      s.totalWorkMinutes += r.workDuration || 0;
+      s.totalBreakMinutes += r.breakDuration || 0;
+    }
+
+    return Object.values(map).map((u) => ({
+      ...u,
+      totalWorkHours: (u.totalWorkMinutes / 60).toFixed(2),
+      avgWorkHoursPerDay: u.totalDays ? (u.totalWorkMinutes / 60 / u.totalDays).toFixed(2) : '0',
+    }));
   }
 }
 

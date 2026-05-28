@@ -24,6 +24,7 @@ module.exports = {
       password: defaultPassword,
       status: 'active',
       is_verified: true,
+      is_manager: false,
       created_at: now,
       updated_at: now,
       ...overrides,
@@ -32,68 +33,71 @@ module.exports = {
     // Insert CEO first
     await queryInterface.bulkInsert('users', [
       baseUser({
-        email: 'ceo@staffclock.com',
+        email: 'ceo@mtn-company.co.rw',
         first_name: 'John',
         last_name: 'Executive',
         role: 'ceo',
-        phone: '+1234567890',
+        phone: '+25078831559901',
         department_id: getDeptId('Executive'),
         location_id: getLocId('Headquarters'),
         manager_id: null,
+        is_manager: true,
       }),
     ]);
 
     const [ceo] = await queryInterface.sequelize.query(
-      "SELECT id FROM users WHERE email = 'ceo@staffclock.com'",
+      "SELECT id FROM users WHERE email = 'ceo@mtn-company.co.rw'",
       { type: queryInterface.sequelize.QueryTypes.SELECT }
     );
 
     // Insert Admin
     await queryInterface.bulkInsert('users', [
       baseUser({
-        email: 'admin@staffclock.com',
+        email: 'admin@mtn-company.co.rw',
         first_name: 'Sarah',
         last_name: 'Administrator',
         role: 'admin',
-        phone: '+1234567891',
+        phone: '+250788314181',
         department_id: getDeptId('Human Resources'),
         location_id: getLocId('Headquarters'),
         manager_id: ceo.id,
+        is_manager: true,
       }),
     ]);
 
     const [admin] = await queryInterface.sequelize.query(
-      "SELECT id FROM users WHERE email = 'admin@staffclock.com'",
+      "SELECT id FROM users WHERE email = 'admin@mtn-company.co.rw'",
       { type: queryInterface.sequelize.QueryTypes.SELECT }
     );
 
     // Insert IT Manager
     await queryInterface.bulkInsert('users', [
       baseUser({
-        email: 'it.manager@staffclock.com',
+        email: 'it.manager@mtn-company.co.rw',
         first_name: 'David',
         last_name: 'TechLead',
         role: 'staff',
-        phone: '+1234567894',
+        phone: '+250788312277',
         department_id: getDeptId('IT'),
         location_id: getLocId('Technical Support'),
         manager_id: ceo.id,
+        is_manager: true,
       }),
     ]);
 
     const [itManager] = await queryInterface.sequelize.query(
-      "SELECT id FROM users WHERE email = 'it.manager@staffclock.com'",
+      "SELECT id FROM users WHERE email = 'it.manager@mtn-company.co.rw'",
       { type: queryInterface.sequelize.QueryTypes.SELECT }
     );
 
     // Insert remaining users
     await queryInterface.bulkInsert('users', [
-      baseUser({ email: 'security1@staffclock.com', first_name: 'Mike', last_name: 'Guard', role: 'security', phone: '+1234567892', department_id: getDeptId('Security'), location_id: getLocId('Headquarters'), manager_id: admin.id }),
-      baseUser({ email: 'security2@staffclock.com', first_name: 'Tom', last_name: 'Watchman', role: 'security', phone: '+1234567893', department_id: getDeptId('Security'), location_id: getLocId('Branch Office'), manager_id: admin.id }),
-      baseUser({ email: 'developer1@staffclock.com', first_name: 'Alice', last_name: 'Developer', role: 'staff', phone: '+1234567895', department_id: getDeptId('IT'), location_id: getLocId('Technical Support'), manager_id: itManager.id }),
-      baseUser({ email: 'developer2@staffclock.com', first_name: 'Bob', last_name: 'Coder', role: 'staff', phone: '+1234567896', department_id: getDeptId('IT'), location_id: getLocId('Technical Support'), manager_id: itManager.id }),
-      baseUser({ email: 'sales1@staffclock.com', first_name: 'Emma', last_name: 'Seller', role: 'staff', phone: '+1234567897', department_id: getDeptId('Sales'), location_id: getLocId('Branch Office'), manager_id: admin.id }),
-      baseUser({ email: 'inactive@staffclock.com', first_name: 'Inactive', last_name: 'User', role: 'staff', status: 'inactive', phone: '+1234567898', department_id: getDeptId('Administration'), location_id: getLocId('Headquarters'), manager_id: admin.id }),
+      baseUser({ email: 'security1@mtn-company.co.rw', first_name: 'Mike', last_name: 'Guard', role: 'security', phone: '+250783443211', department_id: getDeptId('Security'), location_id: getLocId('Headquarters'), manager_id: admin.id }),
+      baseUser({ email: 'security2@mtn-company.co.rw', first_name: 'Tom', last_name: 'Watchman', role: 'security', phone: '+250782117836', department_id: getDeptId('Security'), location_id: getLocId('Branch Office'), manager_id: admin.id }),
+      baseUser({ email: 'developer1@mtn-company.co.rw', first_name: 'Alice', last_name: 'Developer', role: 'staff', phone: '+250788313922', department_id: getDeptId('IT'), location_id: getLocId('Technical Support'), manager_id: itManager.id }),
+      baseUser({ email: 'developer2@mtn-company.co.rw', first_name: 'Bob', last_name: 'Coder', role: 'staff', phone: '+250788316735', department_id: getDeptId('IT'), location_id: getLocId('Technical Support'), manager_id: itManager.id }),
+      baseUser({ email: 'sales1@mtn-company.co.rw', first_name: 'Emma', last_name: 'Seller', role: 'staff', phone: '+250788312666', department_id: getDeptId('Sales'), location_id: getLocId('Branch Office'), manager_id: admin.id }),
+      baseUser({ email: 'inactive@mtn-company.co.rw', first_name: 'Inactive', last_name: 'User', role: 'staff', status: 'inactive', phone: '+250788319956', department_id: getDeptId('Administration'), location_id: getLocId('Headquarters'), manager_id: admin.id }),
     ]);
   },
 

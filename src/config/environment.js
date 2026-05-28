@@ -66,8 +66,11 @@ const config = {
 };
 
 if (config.isProduction) {
-  const missing = ['JWT_SECRET', 'DATABASE_URL', 'SMTP_HOST', 'SMTP_USER', 'SMTP_PASS'].filter((k) => !process.env[k]);
-  if (missing.length) throw new Error(`Missing required: ${missing.join(', ')}`);
+  const required = ['JWT_SECRET', 'DATABASE_URL'].filter((k) => !process.env[k]);
+  if (required.length) throw new Error(`Missing required: ${required.join(', ')}`);
+
+  const optional = ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASS'].filter((k) => !process.env[k]);
+  if (optional.length) console.warn(`⚠ Email not configured (missing: ${optional.join(', ')}). Verification emails will be skipped.`);
 }
 
 export default config;

@@ -91,6 +91,12 @@ class User extends Model {
           allowNull: true,
           field: 'manager_id',
         },
+        isManager: {
+          type: DataTypes.BOOLEAN,
+          allowNull: false,
+          defaultValue: false,
+          field: 'is_manager',
+        },
         lastLoginAt: {
           type: DataTypes.DATE,
           allowNull: true,

@@ -18,13 +18,5 @@ export const createServices = (db) => ({
   reportService: new ReportService(db),
 });
 
-export {
-  AuthService,
-  UserService,
-  AttendanceService,
-  ShiftService,
-  LeaveService,
-  DepartmentService,
-  LocationService,
-  ReportService,
-};
+export { AuthService, UserService, AttendanceService, ShiftService, LeaveService, DepartmentService, LocationService, ReportService };
+export { default as CrudService } from './crud.service.js';

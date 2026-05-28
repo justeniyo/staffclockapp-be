@@ -94,11 +94,27 @@ export const can = (resource, action) => {
 
     const allowedRoles = getAllowedRoles(resource, action);
 
-    if (!allowedRoles.includes(req.user.role)) {
-      return ApiResponse.forbidden(res, 'Insufficient permissions');
+    // Direct role match
+    if (allowedRoles.includes(req.user.role)) {
+      return next();
     }
 
-    next();
+    // Staff managers inherit manager-level permissions (users.list, leaves.approve, etc.)
+    // but NOT admin-only actions (users.create, users.delete, departments.delete)
+    if (req.user.isManager && req.user.role === 'staff') {
+      const managerActions = {
+        users:      ['list', 'read', 'listByRole'],
+        leaves:     ['list', 'read', 'approve', 'reject'],
+        attendance: ['viewAll', 'viewByUser'],
+        shifts:     ['list', 'read', 'create', 'update'],
+      };
+      const allowed = managerActions[resource];
+      if (allowed && allowed.includes(action)) {
+        return next();
+      }
+    }
+
+    return ApiResponse.forbidden(res, 'Insufficient permissions');
   };
 };
 
