@@ -8,14 +8,14 @@ module.exports = {
     await queryInterface.bulkInsert('locations', [
       {
         name: 'Headquarters',
-        address: '123 Main Street, Business District, City',
+        address: 'MTN Centre, KG 9 Ave, Kigali',
         is_active: true,
         created_at: now,
         updated_at: now,
       },
       {
         name: 'Technical Support',
-        address: '456 Tech Lane, Innovation Park, City',
+        address: 'KG 11 Ave, Kigali',
         is_active: true,
         created_at: now,
         updated_at: now,
@@ -29,14 +29,14 @@ module.exports = {
       },
       {
         name: 'Branch Office',
-        address: '789 Branch Road, Suburban Area, Town',
+        address: 'Union Trade Center (UTC), 2nd Floor, KN 4 Ave, Kigali',
         is_active: true,
         created_at: now,
         updated_at: now,
       },
       {
-        name: 'Field Office',
-        address: '321 Field Avenue, Industrial Zone, Village',
+        name: 'Field Site',
+        address: 'KG 43D Ave, Kigali',
         is_active: true,
         created_at: now,
         updated_at: now,

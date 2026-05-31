@@ -56,6 +56,7 @@ const config = {
   app: {
     name: process.env.APP_NAME || 'StaffClock',
     url: process.env.APP_URL || 'http://localhost:3000',
+    frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
   },
   verification: {
     tokenExpiry: parseInt(process.env.VERIFICATION_TOKEN_EXPIRY, 10) || 24, // hours

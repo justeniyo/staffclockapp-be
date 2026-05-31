@@ -109,6 +109,14 @@ export const updateUserValidator = [
   body('managerId')
     .optional({ values: 'falsy' })
     .isInt({ min: 1 }).withMessage('Invalid manager ID'),
+
+  body('isVerified')
+    .optional()
+    .isBoolean().withMessage('isVerified must be a boolean'),
+
+  body('isManager')
+    .optional()
+    .isBoolean().withMessage('isManager must be a boolean'),
 ];
 
 export const getUserValidator = [

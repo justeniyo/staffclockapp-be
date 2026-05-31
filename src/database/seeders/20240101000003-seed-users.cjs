@@ -37,7 +37,7 @@ module.exports = {
         first_name: 'John',
         last_name: 'Executive',
         role: 'ceo',
-        phone: '+25078831559901',
+        phone: '+250788315901',
         department_id: getDeptId('Executive'),
         location_id: getLocId('Headquarters'),
         manager_id: null,

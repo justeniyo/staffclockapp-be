@@ -1,0 +1,58 @@
+# Render Blueprint — one-click deploy spec
+# https://render.com/docs/blueprint-spec
+#
+# Usage: In Render Dashboard → New → Blueprint → connect this repo.
+# Render reads this file, prompts for the env vars marked `sync: false`,
+# and provisions the web service.
+
+services:
+  - type: web
+    name: staffclock
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    buildCommand: npm run db:setup && npm start
+    # For the FIRST deploy: change this to `npm run db:setup && npm start`
+    # Then revert to `npm start` after migrations + seeds have run once.
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      - key: NODE_VERSION
+        value: "22"
+
+      # ── Secrets — Render prompts for these on first deploy ──
+      - key: DATABASE_URL
+        sync: false           # Paste your Neon pooled connection string
+      - key: JWT_SECRET
+        sync: false           # Generate: node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+
+      # ── URLs — set after frontend is deployed ──
+      - key: CORS_ORIGIN
+        sync: false           # e.g. https://staffclock-frontend.pages.dev
+      - key: APP_URL
+        sync: false           # e.g. https://staffclock.onrender.com (your Render URL)
+      - key: FRONTEND_URL
+        sync: false           # Same as CORS_ORIGIN — used for email verify/reset links
+
+      # ── Tunables ──
+      - key: BCRYPT_ROUNDS
+        value: "10"
+
+      # ── Optional: SMTP for email verification ──
+      # Uncomment and fill in if you want password reset & verification emails to work.
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "465"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        value: juste@globalrisk.rw
