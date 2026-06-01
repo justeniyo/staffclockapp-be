@@ -35,16 +35,16 @@ describe('AuthService', () => {
         ...createMockUser({ password: hashedPassword }),
         validatePassword: sandbox.stub().resolves(true),
         update: sandbox.stub().resolves(),
-        toSafeObject: sandbox.stub().returns({ id: 1, email: 'test@mtn-company.rw' }),
+        toSafeObject: sandbox.stub().returns({ id: 1, email: 'test@staffclock.com' }),
       };
 
       mockDb.User.findOne.resolves(mockUser);
 
-      const result = await authService.login('test@mtn-company.rw', 'Password123');
+      const result = await authService.login('test@staffclock.com', 'Password123');
 
       expect(result).to.have.property('token');
       expect(result).to.have.property('user');
-      expect(result.user).to.have.property('email', 'test@mtn-company.rw');
+      expect(result.user).to.have.property('email', 'test@staffclock.com');
       expect(mockUser.update.calledOnce).to.be.true;
     });
 
@@ -69,7 +69,7 @@ describe('AuthService', () => {
       mockDb.User.findOne.resolves(mockUser);
 
       try {
-        await authService.login('test@mtn-company.rw', 'wrongpassword');
+        await authService.login('test@staffclock.com', 'wrongpassword');
         expect.fail('Should have thrown error');
       } catch (error) {
         expect(error.message).to.equal('Invalid credentials');
@@ -82,7 +82,7 @@ describe('AuthService', () => {
       mockDb.User.findOne.resolves(mockUser);
 
       try {
-        await authService.login('test@mtn-company.rw', 'Password123');
+        await authService.login('test@staffclock.com', 'Password123');
         expect.fail('Should have thrown error');
       } catch (error) {
         expect(error.message).to.equal('Account is not active');

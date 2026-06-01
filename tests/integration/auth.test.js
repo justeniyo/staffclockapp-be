@@ -49,7 +49,7 @@ describe('Auth API Integration', () => {
         ...createMockUser({ password: hashedPassword }),
         validatePassword: sandbox.stub().resolves(true),
         update: sandbox.stub().resolves(),
-        toSafeObject: () => ({ id: 1, email: 'test@mtn-company.rw', role: ROLES.STAFF }),
+        toSafeObject: () => ({ id: 1, email: 'test@staffclock.com', role: ROLES.STAFF }),
       };
 
       mockDb.User.findOne.resolves(mockUser);
@@ -57,7 +57,7 @@ describe('Auth API Integration', () => {
       const res = await request(app)
         .post('/api/auth/login')
         .send({
-          email: 'test@mtn-company.rw',
+          email: 'test@staffclock.com',
           password: 'Password123',
         });
 

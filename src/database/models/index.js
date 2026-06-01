@@ -7,9 +7,6 @@ import config from '../../config/environment.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-/**
- * Sequelize instance configured for the current environment
- */
 const sequelize = new Sequelize(
   config.database.name,
   config.database.username,
@@ -23,42 +20,30 @@ const sequelize = new Sequelize(
     pool: config.isProduction
       ? { max: 5, min: 0, acquire: 30000, idle: 5000, evict: 1000 }
       : { max: 10, min: 0, acquire: 30000, idle: 10000 },
-    define: {
-      timestamps: true,
-      underscored: true,
-    },
+    define: { timestamps: true, underscored: true },
   }
 );
 
-const db = {
-  sequelize,
-  Sequelize,
-};
+const db = { sequelize, Sequelize };
 
-/**
- * Dynamically loads and initializes all models
- * @returns {Promise<Object>} Database object with all models
- */
+// Auto-discovers every *.js in this directory (except index.js), initialises it,
+// then wires up associate() once everything is loaded.
 const initializeModels = async () => {
   const modelFiles = readdirSync(__dirname).filter(
     (file) => file !== 'index.js' && file.endsWith('.js')
   );
 
-  // Import and initialize each model
   for (const file of modelFiles) {
     const modelPath = pathToFileURL(join(__dirname, file)).href;
-    const modelModule = await import(modelPath);
-    const model = modelModule.default;
-
+    const { default: model } = await import(modelPath);
     if (model && typeof model.initialize === 'function') {
       model.initialize(sequelize);
       db[model.name] = model;
     }
   }
 
-  // Run associations after all models are loaded
   for (const modelName of Object.keys(db)) {
-    if (db[modelName].associate && typeof db[modelName].associate === 'function') {
+    if (typeof db[modelName].associate === 'function') {
       db[modelName].associate(db);
     }
   }
@@ -66,10 +51,6 @@ const initializeModels = async () => {
   return db;
 };
 
-/**
- * Tests database connection
- * @returns {Promise<boolean>}
- */
 const testConnection = async () => {
   try {
     await sequelize.authenticate();
@@ -81,32 +62,15 @@ const testConnection = async () => {
   }
 };
 
-/**
- * Syncs database models
- * @param {Object} options - Sequelize sync options
- * @returns {Promise<void>}
- */
 const syncDatabase = async (options = {}) => {
   await sequelize.sync(options);
   console.log('✓ Database synchronized');
 };
 
-/**
- * Closes database connection
- * @returns {Promise<void>}
- */
 const closeConnection = async () => {
   await sequelize.close();
   console.log('✓ Database connection closed');
 };
 
-export {
-  sequelize,
-  Sequelize,
-  initializeModels,
-  testConnection,
-  syncDatabase,
-  closeConnection,
-};
-
+export { sequelize, Sequelize, initializeModels, testConnection, syncDatabase, closeConnection };
 export default db;

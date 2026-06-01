@@ -3,7 +3,7 @@ import { createUserValidator, updateUserValidator, listUsersValidator } from '..
 import { runValidator } from './helpers.js';
 
 const VALID_USER = {
-  email: 'jane@mtn-company.rw',
+  email: 'jane@staffclock.com',
   password: 'Secure1!pass',
   firstName: 'Jane',
   lastName: 'Doe',

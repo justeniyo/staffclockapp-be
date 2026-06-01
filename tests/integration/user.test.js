@@ -48,7 +48,7 @@ describe('User API Integration', () => {
 
   describe('POST /api/users', () => {
     const newUserData = {
-      email: 'new@mtn-company.rw',
+      email: 'new@staffclock.com',
       password: 'Password123',
       firstName: 'New',
       lastName: 'User',
@@ -77,7 +77,7 @@ describe('User API Integration', () => {
 
       expect(res.status).to.equal(201);
       expect(res.body.success).to.be.true;
-      expect(res.body.data).to.have.property('email', 'new@mtn-company.rw');
+      expect(res.body.data).to.have.property('email', 'new@staffclock.com');
     });
 
     it('should reject when staff tries to create user', async () => {

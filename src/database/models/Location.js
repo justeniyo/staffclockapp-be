@@ -4,32 +4,22 @@ class Location extends Model {
   static initialize(sequelize) {
     return this.init(
       {
-        id: {
-          type: DataTypes.INTEGER,
-          primaryKey: true,
-          autoIncrement: true,
-        },
+        id:   { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
         name: {
           type: DataTypes.STRING(100),
           allowNull: false,
           unique: true,
           validate: {
             notEmpty: { msg: 'Location name cannot be empty' },
-            len: {
-              args: [2, 100],
-              msg: 'Location name must be between 2 and 100 characters',
-            },
+            len: { args: [2, 100], msg: 'Location name must be between 2 and 100 characters' },
           },
         },
         address: {
-          type: DataTypes.STRING(255),
+          type: DataTypes.STRING(500),
           allowNull: true,
+          validate: { len: { args: [0, 500], msg: 'Address must be 500 characters or fewer' } },
         },
-        isActive: {
-          type: DataTypes.BOOLEAN,
-          defaultValue: true,
-          field: 'is_active',
-        },
+        isActive: { type: DataTypes.BOOLEAN, defaultValue: true, field: 'is_active' },
       },
       {
         sequelize,
@@ -42,10 +32,9 @@ class Location extends Model {
   }
 
   static associate(models) {
-    this.hasMany(models.User, {
-      foreignKey: 'location_id',
-      as: 'users',
-    });
+    this.hasMany(models.User,       { foreignKey: 'location_id', as: 'users' });
+    this.hasMany(models.Attendance, { foreignKey: 'location_id', as: 'attendances' });
+    this.hasMany(models.Shift,      { foreignKey: 'location_id', as: 'shifts' });
   }
 }
 

@@ -7,27 +7,14 @@ class Leave extends Model {
   static initialize(sequelize) {
     return this.init(
       {
-        id: {
-          type: DataTypes.INTEGER,
-          primaryKey: true,
-          autoIncrement: true,
-        },
-        userId: {
-          type: DataTypes.INTEGER,
-          allowNull: false,
-          field: 'user_id',
-        },
-        type: {
-          type: DataTypes.ENUM(...LEAVE_TYPES),
-          allowNull: false,
-        },
+        id:     { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+        userId: { type: DataTypes.INTEGER, allowNull: false, field: 'user_id' },
+        type:   { type: DataTypes.ENUM(...LEAVE_TYPES), allowNull: false },
         startDate: {
           type: DataTypes.DATEONLY,
           allowNull: false,
           field: 'start_date',
-          validate: {
-            isDate: { msg: 'Start date must be a valid date' },
-          },
+          validate: { isDate: { msg: 'Start date must be a valid date' } },
         },
         endDate: {
           type: DataTypes.DATEONLY,
@@ -54,30 +41,12 @@ class Leave extends Model {
         reason: {
           type: DataTypes.TEXT,
           allowNull: true,
-          validate: {
-            len: { args: [0, 1000], msg: 'Reason must be 1000 characters or fewer' },
-          },
+          validate: { len: { args: [0, 1000], msg: 'Reason must be 1000 characters or fewer' } },
         },
-        status: {
-          type: DataTypes.ENUM(...LEAVE_STATUSES),
-          allowNull: false,
-          defaultValue: 'pending',
-        },
-        reviewedBy: {
-          type: DataTypes.INTEGER,
-          allowNull: true,
-          field: 'reviewed_by',
-        },
-        reviewedAt: {
-          type: DataTypes.DATE,
-          allowNull: true,
-          field: 'reviewed_at',
-        },
-        reviewNotes: {
-          type: DataTypes.TEXT,
-          allowNull: true,
-          field: 'review_notes',
-        },
+        status:      { type: DataTypes.ENUM(...LEAVE_STATUSES), allowNull: false, defaultValue: 'pending' },
+        reviewedBy:  { type: DataTypes.INTEGER, allowNull: true, field: 'reviewed_by' },
+        reviewedAt:  { type: DataTypes.DATE,    allowNull: true, field: 'reviewed_at' },
+        reviewNotes: { type: DataTypes.TEXT,    allowNull: true, field: 'review_notes' },
       },
       {
         sequelize,
@@ -94,17 +63,12 @@ class Leave extends Model {
   }
 
   static associate(models) {
-    this.belongsTo(models.User, { foreignKey: 'user_id', as: 'user' });
+    this.belongsTo(models.User, { foreignKey: 'user_id',     as: 'user' });
     this.belongsTo(models.User, { foreignKey: 'reviewed_by', as: 'reviewer' });
   }
 
-  isPending() {
-    return this.status === 'pending';
-  }
-
-  isApproved() {
-    return this.status === 'approved';
-  }
+  isPending()  { return this.status === 'pending'; }
+  isApproved() { return this.status === 'approved'; }
 }
 
 Leave.TYPES = LEAVE_TYPES;

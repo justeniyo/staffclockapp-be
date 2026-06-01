@@ -2,30 +2,65 @@ name: Keep Backend Alive
 
 on:
   schedule:
-    # Ping every 10 minutes during business hours (Mon-Fri, 5 AM - 8 PM UTC)
+    # Every 10 min during business hours (Mon-Fri 05:00-20:00 UTC)
     - cron: '*/10 5-20 * * 1-5'
-    # Ping every 30 minutes outside business hours
+    # Every 30 min off-hours weekdays
     - cron: '*/30 0-4,21-23 * * 1-5'
-    # Ping every 30 minutes on weekends
+    # Every 30 min on weekends
     - cron: '*/30 * * * 0,6'
-  workflow_dispatch: # Allow manual trigger
+  workflow_dispatch:
 
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 1
+    timeout-minutes: 3
     steps:
-      - name: Ping health endpoint
-        run: |
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            --max-time 30 \
-            "${{ secrets.BACKEND_HEALTH_URL }}")
-          
-          echo "Health check returned: $HTTP_STATUS"
-          
-          if [ "$HTTP_STATUS" -ne 200 ]; then
-            echo "::warning::Health check failed with status $HTTP_STATUS"
-            exit 1
-          fi
+      - name: Validate secret
         env:
           BACKEND_HEALTH_URL: ${{ secrets.BACKEND_HEALTH_URL }}
+        run: |
+          if [ -z "$BACKEND_HEALTH_URL" ]; then
+            echo "::error::BACKEND_HEALTH_URL secret is not set."
+            echo "Add it under: Settings → Secrets and variables → Actions → New repository secret"
+            echo "Value should be e.g. https://your-app.onrender.com/health"
+            exit 1
+          fi
+          echo "Pinging: ${BACKEND_HEALTH_URL%%\?*}"
+
+      - name: Ping health endpoint (with retry for cold starts)
+        env:
+          BACKEND_HEALTH_URL: ${{ secrets.BACKEND_HEALTH_URL }}
+        run: |
+          # Render free-tier cold starts can take 30-60s. Retry a few times
+          # before giving up so a slow wake-up doesn't fail the workflow.
+          ATTEMPTS=4
+          DELAY=20
+
+          for i in $(seq 1 $ATTEMPTS); do
+            echo "Attempt $i of $ATTEMPTS..."
+            HTTP_STATUS=$(curl -s -o /tmp/health.json -w "%{http_code}" \
+              --max-time 60 \
+              "$BACKEND_HEALTH_URL" || echo "000")
+
+            echo "  Status: $HTTP_STATUS"
+
+            # 200 = healthy; 503 = degraded but app is up (e.g. DB unreachable).
+            # Both mean the service didn't go to sleep, which is the only goal here.
+            if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "503" ]; then
+              echo "Service is awake."
+              cat /tmp/health.json 2>/dev/null | head -c 500 || true
+              echo
+              if [ "$HTTP_STATUS" = "503" ]; then
+                echo "::warning::Service responded 503 (degraded). App is awake but a dependency may be down."
+              fi
+              exit 0
+            fi
+
+            if [ $i -lt $ATTEMPTS ]; then
+              echo "  Waiting ${DELAY}s before retry..."
+              sleep $DELAY
+            fi
+          done
+
+          echo "::error::Health check failed after $ATTEMPTS attempts."
+          exit 1

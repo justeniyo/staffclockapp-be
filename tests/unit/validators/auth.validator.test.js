@@ -11,7 +11,7 @@ import { runValidator } from './helpers.js';
 describe('Auth Validators', () => {
   describe('signupValidator', () => {
     const VALID_SIGNUP = {
-      email: 'new@mtn-company.rw',
+      email: 'new@staffclock.com',
       password: 'StrongP@ss1',
       firstName: 'Alice',
       lastName: 'Wonder',

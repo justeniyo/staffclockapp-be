@@ -14,7 +14,7 @@ export default {
     type: 'object',
     required: ['email', 'password'],
     properties: {
-      email: { type: 'string', format: 'email', example: 'admin@mtn-company.rw' },
+      email: { type: 'string', format: 'email', example: 'admin@staffclock.com' },
       password: { type: 'string', example: 'Password123' },
     },
   },

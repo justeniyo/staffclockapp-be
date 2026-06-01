@@ -8,17 +8,11 @@ class User extends Model {
   static initialize(sequelize) {
     return this.init(
       {
-        id: {
-          type: DataTypes.INTEGER,
-          primaryKey: true,
-          autoIncrement: true,
-        },
+        id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
         email: {
           type: DataTypes.STRING(255),
           allowNull: false,
-          unique: {
-            msg: 'Email address is already registered',
-          },
+          unique: { msg: 'Email address is already registered' },
           validate: {
             isEmail: { msg: 'Invalid email format' },
             notEmpty: { msg: 'Email cannot be empty' },
@@ -29,49 +23,32 @@ class User extends Model {
           allowNull: false,
           validate: {
             notEmpty: { msg: 'Password cannot be empty' },
-            len: {
-              args: [8, 255],
-              msg: 'Password must be at least 8 characters',
-            },
+            len: { args: [8, 255], msg: 'Password must be at least 8 characters' },
           },
         },
         firstName: {
           type: DataTypes.STRING(100),
           allowNull: false,
           field: 'first_name',
-          validate: {
-            notEmpty: { msg: 'First name cannot be empty' },
-          },
+          validate: { notEmpty: { msg: 'First name cannot be empty' } },
         },
         lastName: {
           type: DataTypes.STRING(100),
           allowNull: false,
           field: 'last_name',
-          validate: {
-            notEmpty: { msg: 'Last name cannot be empty' },
-          },
+          validate: { notEmpty: { msg: 'Last name cannot be empty' } },
         },
         role: {
           type: DataTypes.ENUM(...VALID_ROLES),
           allowNull: false,
           defaultValue: ROLES.STAFF,
-          validate: {
-            isIn: {
-              args: [VALID_ROLES],
-              msg: `Role must be one of: ${VALID_ROLES.join(', ')}`,
-            },
-          },
+          validate: { isIn: { args: [VALID_ROLES], msg: `Role must be one of: ${VALID_ROLES.join(', ')}` } },
         },
         status: {
           type: DataTypes.ENUM(...VALID_STATUSES),
           allowNull: false,
           defaultValue: USER_STATUS.ACTIVE,
-          validate: {
-            isIn: {
-              args: [VALID_STATUSES],
-              msg: `Status must be one of: ${VALID_STATUSES.join(', ')}`,
-            },
-          },
+          validate: { isIn: { args: [VALID_STATUSES], msg: `Status must be one of: ${VALID_STATUSES.join(', ')}` } },
         },
         phone: {
           type: DataTypes.STRING(20),
@@ -84,57 +61,16 @@ class User extends Model {
             },
           },
         },
-        departmentId: {
-          type: DataTypes.INTEGER,
-          allowNull: true,
-          field: 'department_id',
-        },
-        locationId: {
-          type: DataTypes.INTEGER,
-          allowNull: true,
-          field: 'location_id',
-        },
-        managerId: {
-          type: DataTypes.INTEGER,
-          allowNull: true,
-          field: 'manager_id',
-        },
-        isManager: {
-          type: DataTypes.BOOLEAN,
-          allowNull: false,
-          defaultValue: false,
-          field: 'is_manager',
-        },
-        lastLoginAt: {
-          type: DataTypes.DATE,
-          allowNull: true,
-          field: 'last_login_at',
-        },
-        isVerified: {
-          type: DataTypes.BOOLEAN,
-          defaultValue: false,
-          field: 'is_verified',
-        },
-        verificationToken: {
-          type: DataTypes.STRING(255),
-          allowNull: true,
-          field: 'verification_token',
-        },
-        verificationExpires: {
-          type: DataTypes.DATE,
-          allowNull: true,
-          field: 'verification_expires',
-        },
-        passwordResetToken: {
-          type: DataTypes.STRING(255),
-          allowNull: true,
-          field: 'password_reset_token',
-        },
-        passwordResetExpires: {
-          type: DataTypes.DATE,
-          allowNull: true,
-          field: 'password_reset_expires',
-        },
+        departmentId: { type: DataTypes.INTEGER, allowNull: true, field: 'department_id' },
+        locationId:   { type: DataTypes.INTEGER, allowNull: true, field: 'location_id' },
+        managerId:    { type: DataTypes.INTEGER, allowNull: true, field: 'manager_id' },
+        isManager:    { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false, field: 'is_manager' },
+        lastLoginAt:  { type: DataTypes.DATE,    allowNull: true,  field: 'last_login_at' },
+        isVerified:   { type: DataTypes.BOOLEAN, defaultValue: false, field: 'is_verified' },
+        verificationToken:    { type: DataTypes.STRING(255), allowNull: true, field: 'verification_token' },
+        verificationExpires:  { type: DataTypes.DATE,        allowNull: true, field: 'verification_expires' },
+        passwordResetToken:   { type: DataTypes.STRING(255), allowNull: true, field: 'password_reset_token' },
+        passwordResetExpires: { type: DataTypes.DATE,        allowNull: true, field: 'password_reset_expires' },
       },
       {
         sequelize,
@@ -144,26 +80,14 @@ class User extends Model {
         underscored: true,
         hooks: {
           beforeCreate: async (user) => {
-            if (user.password) {
-              user.password = await bcrypt.hash(user.password, config.bcrypt.rounds);
-            }
-            if (user.phone) {
-              user.phone = normalisePhone(user.phone) || user.phone;
-            }
-            if (user.email) {
-              user.email = user.email.trim().toLowerCase();
-            }
+            if (user.password) user.password = await bcrypt.hash(user.password, config.bcrypt.rounds);
+            if (user.phone) user.phone = normalisePhone(user.phone) || user.phone;
+            if (user.email) user.email = user.email.trim().toLowerCase();
           },
           beforeUpdate: async (user) => {
-            if (user.changed('password')) {
-              user.password = await bcrypt.hash(user.password, config.bcrypt.rounds);
-            }
-            if (user.changed('phone') && user.phone) {
-              user.phone = normalisePhone(user.phone) || user.phone;
-            }
-            if (user.changed('email') && user.email) {
-              user.email = user.email.trim().toLowerCase();
-            }
+            if (user.changed('password')) user.password = await bcrypt.hash(user.password, config.bcrypt.rounds);
+            if (user.changed('phone') && user.phone) user.phone = normalisePhone(user.phone) || user.phone;
+            if (user.changed('email') && user.email) user.email = user.email.trim().toLowerCase();
           },
         },
       }
@@ -171,31 +95,17 @@ class User extends Model {
   }
 
   static associate(models) {
-    this.belongsTo(models.Department, {
-      foreignKey: 'department_id',
-      as: 'department',
-    });
-
-    this.belongsTo(models.Location, {
-      foreignKey: 'location_id',
-      as: 'location',
-    });
-
-    this.belongsTo(models.User, {
-      foreignKey: 'manager_id',
-      as: 'manager',
-    });
-
-    this.hasMany(models.User, {
-      foreignKey: 'manager_id',
-      as: 'directReports',
-    });
+    this.belongsTo(models.Department, { foreignKey: 'department_id', as: 'department' });
+    this.belongsTo(models.Location,   { foreignKey: 'location_id',   as: 'location' });
+    this.belongsTo(models.User,       { foreignKey: 'manager_id',    as: 'manager' });
+    this.hasMany(models.User,         { foreignKey: 'manager_id',    as: 'directReports' });
   }
 
   async validatePassword(password) {
     return bcrypt.compare(password, this.password);
   }
 
+  // Strips secret fields before returning user data to the client.
   toSafeObject() {
     const values = this.toJSON();
     delete values.password;
@@ -206,37 +116,15 @@ class User extends Model {
     return values;
   }
 
-  get fullName() {
-    return `${this.firstName} ${this.lastName}`;
-  }
+  get fullName() { return `${this.firstName} ${this.lastName}`; }
 
-  hasRole(role) {
-    return this.role === role;
-  }
-
-  isCeo() {
-    return this.role === ROLES.CEO;
-  }
-
-  isAdmin() {
-    return this.role === ROLES.ADMIN;
-  }
-
-  isSecurity() {
-    return this.role === ROLES.SECURITY;
-  }
-
-  isActive() {
-    return this.status === USER_STATUS.ACTIVE;
-  }
-
-  getRoleLevel() {
-    return ROLE_HIERARCHY[this.role] || 0;
-  }
-
-  hasMinimumRole(targetRole) {
-    return this.getRoleLevel() >= (ROLE_HIERARCHY[targetRole] || 0);
-  }
+  hasRole(role)        { return this.role === role; }
+  isCeo()              { return this.role === ROLES.CEO; }
+  isAdmin()            { return this.role === ROLES.ADMIN; }
+  isSecurity()         { return this.role === ROLES.SECURITY; }
+  isActive()           { return this.status === USER_STATUS.ACTIVE; }
+  getRoleLevel()       { return ROLE_HIERARCHY[this.role] || 0; }
+  hasMinimumRole(role) { return this.getRoleLevel() >= (ROLE_HIERARCHY[role] || 0); }
 
   canManage(targetUser) {
     if (this.isCeo()) return true;

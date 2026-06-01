@@ -1,225 +1,169 @@
 # StaffClock Backend API
 
-A production-ready Node.js backend for employee time tracking and workforce management with role-based access control.
+Node.js + Express + Sequelize backend for employee time tracking and workforce management with role-based access control.
 
 ## Features
 
-- **Time & Attendance** - Clock in/out, break tracking, work duration calculation
-- **Shift Scheduling** - Create, manage, and track employee shifts
-- **Leave Management** - Request, approve, and track leave/PTO
-- **User Management** - RBAC with Staff, Security, Admin, CEO roles
-- **Email Verification** - Signup with email verification and password reset
-- **Swagger Documentation** - Interactive API docs at `/api/docs`
-- **Production Ready** - DATABASE_URL, SSL, graceful shutdown
+- Time and attendance — clock in/out with work hours
+- Shift scheduling and roster management
+- Leave requests with approval workflow
+- User management with RBAC (Staff, Security, Admin, CEO)
+- Email + OTP-based account verification and password reset
+- CSV / Excel / PDF report exports
+- Interactive Swagger docs at `/api/docs`
+- Database health probe at `/health` (for Render/uptime monitors)
 
-## Architecture
+## Stack
+
+- Express 4, Sequelize 6 (PostgreSQL)
+- JWT auth (`jsonwebtoken`), bcrypt password hashing
+- Validation via `express-validator` + `libphonenumber-js` for E.164 phones
+- ExcelJS for `.xlsx`, PDFKit for `.pdf`, nodemailer for SMTP
+
+## Project Layout
 
 ```
 src/
-├── config/                 # Constants, environment, permissions
-├── controllers/            # HTTP request handlers
+├── config/          Constants, environment, role permissions
+├── controllers/     HTTP handlers (thin — see base.controller.js for wrap())
 ├── database/
-│   ├── config/             # Sequelize CLI config
-│   ├── migrations/         # Database migrations
-│   ├── models/             # Sequelize models (auto-loaded)
-│   └── seeders/            # Database seeders
-├── docs/                   # OpenAPI documentation (auto-loaded)
-│   ├── schemas/            # Schema definitions
-│   └── paths/              # Path definitions
-├── emails/                 # Email service and templates
-├── middleware/             # Auth, validation, error handling
-├── routes/                 # API route definitions
-├── services/               # Business logic layer
-├── utils/                  # ApiResponse, AppError, Pagination
-└── validators/             # Request validation
+│   ├── config/      Sequelize CLI config
+│   ├── migrations/  Schema migrations
+│   ├── models/      Sequelize models (auto-loaded)
+│   └── seeders/     Demo data
+├── docs/            OpenAPI definitions (auto-loaded)
+├── emails/          Email service + OTP templates
+├── middleware/      auth, validate, error
+├── routes/          API routes
+├── services/        Business logic
+├── utils/           ApiResponse, AppError, Pagination
+└── validators/      Request validators
 ```
 
 ## Quick Start
 
 ```bash
-# Install
 npm install
-
-# Configure
 cp .env.example .env
+# Edit .env — at minimum, set DATABASE_URL and JWT_SECRET
 
-# Database setup
+# DB
 createdb staffclock
 npm run db:migrate
 npm run db:seed
 
-# Run
-npm run dev
+npm run dev    # Starts on http://localhost:3000
 ```
 
 ## Environment Variables
 
-```bash
-# Server
-NODE_ENV=development
-PORT=3000
+| Variable | Required | Default | Notes |
+|---|---|---|---|
+| `NODE_ENV` | no | `development` | |
+| `PORT` | no | `3000` | Render sets this to `10000` |
+| `HOST` | no | `0.0.0.0` | Must bind 0.0.0.0 in production |
+| `DATABASE_URL` | **yes** | — | Postgres URL with `?sslmode=require` in prod |
+| `JWT_SECRET` | **yes** | — | At least 32 chars; generate with `crypto.randomBytes(48).toString('hex')` |
+| `JWT_EXPIRES_IN` | no | `7d` | |
+| `BCRYPT_ROUNDS` | no | `10` | |
+| `CORS_ORIGIN` | yes (prod) | `*` | Comma-separated allow-list |
+| `APP_URL` | yes (prod) | `http://localhost:3000` | This backend's public URL |
+| `FRONTEND_URL` | yes (prod) | `http://localhost:5173` | Used in welcome email "go to login" link |
+| `SMTP_HOST` | no | — | Without SMTP, emails are logged to console |
+| `SMTP_PORT` | no | `587` | |
+| `SMTP_USER` | no | — | |
+| `SMTP_PASS` | no | — | |
+| `SMTP_FROM` | no | `noreply@staffclock.com` | |
+| `VERIFICATION_TOKEN_EXPIRY` | no | `24` | Hours; OTP expiry for account verification |
 
-# Database (URL-based for all environments)
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/staffclock
+## API Reference
 
-# JWT (REQUIRED in production)
-JWT_SECRET=your-secret-min-32-chars
+### Authentication (OTP-based)
 
-# Email (REQUIRED in production)
-SMTP_HOST=mail.yourdomain.com
-SMTP_PORT=587
-SMTP_USER=noreply@yourdomain.com
-SMTP_PASS=your-password
-SMTP_FROM=noreply@yourdomain.com
-
-# App
-APP_NAME=StaffClock
-APP_URL=http://localhost:3000
-```
-
-## API Endpoints
-
-### Authentication
-
-| Method | Endpoint | Description | Access |
-|--------|----------|-------------|--------|
-| POST | `/api/auth/signup` | Register account | Public |
-| GET | `/api/auth/verify-email` | Verify email | Public |
-| POST | `/api/auth/resend-verification` | Resend verification | Public |
-| POST | `/api/auth/forgot-password` | Request password reset | Public |
-| POST | `/api/auth/reset-password` | Reset password | Public |
-| POST | `/api/auth/login` | Login | Public |
-| POST | `/api/auth/logout` | Logout | Auth |
-| GET | `/api/auth/me` | Get profile | Auth |
-| PUT | `/api/auth/password` | Change password | Auth |
+| Method | Endpoint | Body | Access |
+|---|---|---|---|
+| POST | `/api/auth/signup` | `{ email, password, firstName, lastName }` | Public |
+| POST | `/api/auth/verify-email` | `{ email, otp }` | Public |
+| POST | `/api/auth/resend-verification` | `{ email }` | Public |
+| POST | `/api/auth/forgot-password` | `{ email }` | Public |
+| POST | `/api/auth/verify-reset-otp` | `{ email, otp }` | Public |
+| POST | `/api/auth/reset-password` | `{ email, otp, password }` | Public |
+| POST | `/api/auth/login` | `{ email, password }` | Public |
+| POST | `/api/auth/logout` | — | Auth |
+| GET | `/api/auth/me` | — | Auth |
+| PUT | `/api/auth/password` | `{ currentPassword, newPassword, confirmPassword }` | Auth |
 
 ### Attendance
 
-| Method | Endpoint | Description | Access |
-|--------|----------|-------------|--------|
-| POST | `/api/attendance/clock-in` | Clock in | All |
-| POST | `/api/attendance/clock-out` | Clock out | All |
-| POST | `/api/attendance/break/start` | Start break | All |
-| POST | `/api/attendance/break/end` | End break | All |
-| GET | `/api/attendance/status` | Current status | All |
-| GET | `/api/attendance/my` | Own records | All |
-| GET | `/api/attendance/my/summary` | Own summary | All |
-| GET | `/api/attendance` | All records | Admin |
-| GET | `/api/attendance/user/:userId` | User records | Admin |
+| Method | Endpoint | Access |
+|---|---|---|
+| POST | `/api/attendance/clock-in` | All |
+| POST | `/api/attendance/clock-out` | All |
+| GET | `/api/attendance/status` | All |
+| GET | `/api/attendance/my` | All |
+| GET | `/api/attendance/my/summary` | All |
+| GET | `/api/attendance` | Admin |
+| GET | `/api/attendance/user/:userId` | Admin |
 
-### Shifts
+### Shifts, Leaves, Users, Departments, Locations
 
-| Method | Endpoint | Description | Access |
-|--------|----------|-------------|--------|
-| POST | `/api/shifts` | Create shift | Admin |
-| POST | `/api/shifts/bulk` | Bulk create | Admin |
-| GET | `/api/shifts/my` | Own shifts | All |
-| GET | `/api/shifts` | All shifts | Admin |
-| GET | `/api/shifts/week` | Week schedule | Admin |
-| PUT | `/api/shifts/:id` | Update shift | Admin |
-| POST | `/api/shifts/:id/cancel` | Cancel shift | Admin |
-| DELETE | `/api/shifts/:id` | Delete shift | Admin |
+Standard CRUD. See Swagger UI at `/api/docs` for full schemas.
 
-### Leaves
+### Reports
 
-| Method | Endpoint | Description | Access |
-|--------|----------|-------------|--------|
-| POST | `/api/leaves` | Request leave | All |
-| GET | `/api/leaves/my` | Own requests | All |
-| GET | `/api/leaves/my/balance` | Own balance | All |
-| POST | `/api/leaves/:id/cancel` | Cancel request | All |
-| GET | `/api/leaves` | All requests | Admin |
-| GET | `/api/leaves/pending` | Pending requests | Admin |
-| POST | `/api/leaves/:id/approve` | Approve | Admin |
-| POST | `/api/leaves/:id/reject` | Reject | Admin |
+| Method | Endpoint | Access |
+|---|---|---|
+| GET | `/api/reports/attendance` | Admin |
+| GET | `/api/reports/attendance/summary` | Admin |
+| GET | `/api/reports/shifts` | Admin |
+| GET | `/api/reports/leaves` | Admin |
 
-### Users
+Query: `format` (`csv` \| `excel` \| `pdf`), `startDate`, `endDate`, `userId`, `departmentId`, `locationId`, `status`, `type`.
 
-| Method | Endpoint | Description | Access |
-|--------|----------|-------------|--------|
-| POST | `/api/users` | Create user | Admin |
-| GET | `/api/users` | List users | Admin |
-| GET | `/api/users/:id` | Get user | Admin |
-| PUT | `/api/users/:id` | Update user | Admin |
-| DELETE | `/api/users/:id` | Delete user | Admin |
+### Health
 
-### Departments & Locations
+| Method | Endpoint | Returns |
+|---|---|---|
+| GET | `/health` | `200` if DB reachable, `503` if degraded |
 
-| Method | Endpoint | Description | Access |
-|--------|----------|-------------|--------|
-| POST | `/api/departments` | Create | Admin |
-| GET | `/api/departments` | List | All |
-| PUT | `/api/departments/:id` | Update | Admin |
-| DELETE | `/api/departments/:id` | Delete | CEO |
-| POST | `/api/locations` | Create | Admin |
-| GET | `/api/locations` | List | All |
-| PUT | `/api/locations/:id` | Update | Admin |
-| DELETE | `/api/locations/:id` | Delete | CEO |
-
-### Reports (Export)
-
-| Method | Endpoint | Description | Access |
-|--------|----------|-------------|--------|
-| GET | `/api/reports/attendance` | Export attendance records | Admin |
-| GET | `/api/reports/attendance/summary` | Export attendance summary per employee | Admin |
-| GET | `/api/reports/shifts` | Export shift schedule | Admin |
-| GET | `/api/reports/leaves` | Export leave requests | Admin |
-
-**Report Query Parameters:**
-- `format` - `csv` (default) or `excel`
-- `startDate` - Filter from date (YYYY-MM-DD)
-- `endDate` - Filter to date (YYYY-MM-DD)
-- `userId` - Filter by specific user
-- `departmentId` - Filter by department
-- `locationId` - Filter by location
-- `status` - Filter by status (shifts/leaves)
-- `type` - Filter by leave type
-
-## Role Permissions
+## Roles
 
 | Role | Level | Capabilities |
-|------|-------|--------------|
-| CEO | 4 | Full access, delete departments/locations |
-| Admin | 3 | User/shift/leave management |
-| Security | 2 | Limited read access |
-| Staff | 1 | Own data only |
+|---|---|---|
+| CEO | 4 | Full access; delete departments and locations |
+| Admin | 3 | User / shift / leave / report management |
+| Security | 2 | Read-only on assigned location |
+| Staff | 1 | Own data; managers see direct reports |
 
-## Test Credentials
+## Test Credentials (after seeding)
 
-| Email | Password | Role |
-|-------|----------|------|
-| ceo@mtn-company.rw | Password123 | CEO |
-| admin@mtn-company.rw | Password123 | Admin |
-| security1@mtn-company.rw | Password123 | Security |
-| developer1@mtn-company.rw | Password123 | Staff |
+All seeded users have password `Password123`.
+
+| Email | Role |
+|---|---|
+| `ceo@staffclock.com` | CEO |
+| `admin@staffclock.com` | Admin |
+| `it.manager@staffclock.com` | Staff (Manager) |
+| `security1@staffclock.com` | Security |
+| `developer1@staffclock.com` | Staff |
 
 ## Scripts
 
 ```bash
-npm start                    # Production server
-npm run dev                  # Development with watch
-npm test                     # All tests
-npm run test:unit            # Unit tests
-npm run test:integration     # Integration tests
-npm run db:migrate           # Run migrations
-npm run db:seed              # Run seeders
-npm run db:reset             # Reset database
+npm start                 # Production
+npm run dev               # Development (watch mode)
+npm test                  # All tests
+npm run test:unit         # Unit tests
+npm run test:integration  # Integration tests
+npm run db:migrate        # Run migrations
+npm run db:seed           # Seed demo data
+npm run db:reset          # Drop + recreate + migrate + seed
+npm run db:setup          # Migrate + seed (first deploy)
 ```
-
-## API Documentation
-
-Interactive Swagger UI: `http://localhost:3000/api/docs`
 
 ## Deployment
 
-```bash
-# Heroku
-heroku create app-name
-heroku addons:create heroku-postgresql:hobby-dev
-heroku config:set JWT_SECRET=secret SMTP_HOST=... SMTP_USER=... SMTP_PASS=...
-git push heroku main
-heroku run npm run db:migrate
-```
+See [DEPLOY.md](DEPLOY.md) for the recommended free-tier stack (Render + Neon + Cloudflare Pages) with step-by-step instructions and a `render.yaml` blueprint.
 
 ## License
 

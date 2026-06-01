@@ -3,7 +3,7 @@ export default {
     type: 'object',
     properties: {
       id: { type: 'integer', example: 1 },
-      email: { type: 'string', format: 'email', example: 'user@mtn-company.rw' },
+      email: { type: 'string', format: 'email', example: 'user@staffclock.com' },
       firstName: { type: 'string', example: 'John' },
       lastName: { type: 'string', example: 'Doe' },
       role: { type: 'string', enum: ['staff', 'admin', 'security', 'ceo'], example: 'staff' },
@@ -25,7 +25,7 @@ export default {
     type: 'object',
     required: ['email', 'password', 'firstName', 'lastName', 'role'],
     properties: {
-      email: { type: 'string', format: 'email', example: 'newuser@mtn-company.rw' },
+      email: { type: 'string', format: 'email', example: 'newuser@staffclock.com' },
       password: { type: 'string', minLength: 8, example: 'Password123', description: 'Min 8 chars, uppercase, lowercase, number' },
       firstName: { type: 'string', example: 'John' },
       lastName: { type: 'string', example: 'Doe' },
