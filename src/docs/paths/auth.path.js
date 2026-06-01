@@ -34,13 +34,25 @@ export default {
   },
 
   '/auth/verify-email': {
-    get: {
-      summary: 'Verify email address',
-      description: 'Verify user email with token sent via email',
+    post: {
+      summary: 'Verify email address with OTP code',
+      description: 'Verify a user account using the 6-digit code sent via email after signup.',
       tags: ['Authentication'],
-      parameters: [
-        { in: 'query', name: 'token', required: true, schema: { type: 'string' }, description: 'Verification token' },
-      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              required: ['email', 'otp'],
+              properties: {
+                email: { type: 'string', format: 'email', example: 'user@example.com' },
+                otp:   { type: 'string', pattern: '^\\d{6}$', example: '123456' },
+              },
+            },
+          },
+        },
+      },
       responses: {
         200: {
           description: 'Email verified successfully',
@@ -56,7 +68,7 @@ export default {
             },
           },
         },
-        400: { description: 'Invalid or expired token' },
+        400: { description: 'Invalid or expired verification code' },
       },
     },
   },
@@ -125,16 +137,51 @@ export default {
     },
   },
 
-  '/auth/reset-password': {
+  '/auth/verify-reset-otp': {
     post: {
-      summary: 'Reset password',
-      description: 'Reset password using token from email',
+      summary: 'Verify password reset code',
+      description: 'Optional pre-check of a 6-digit password reset code before showing the new-password form.',
       tags: ['Authentication'],
       requestBody: {
         required: true,
         content: {
           'application/json': {
-            schema: { $ref: '#/components/schemas/ResetPasswordRequest' },
+            schema: {
+              type: 'object',
+              required: ['email', 'otp'],
+              properties: {
+                email: { type: 'string', format: 'email' },
+                otp:   { type: 'string', pattern: '^\\d{6}$' },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        200: { description: 'Code verified' },
+        400: { description: 'Invalid or expired code' },
+      },
+    },
+  },
+
+  '/auth/reset-password': {
+    post: {
+      summary: 'Reset password with OTP code',
+      description: 'Reset password using the 6-digit code sent via email.',
+      tags: ['Authentication'],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              required: ['email', 'otp', 'password'],
+              properties: {
+                email:    { type: 'string', format: 'email' },
+                otp:      { type: 'string', pattern: '^\\d{6}$' },
+                password: { type: 'string', minLength: 8, maxLength: 128 },
+              },
+            },
           },
         },
       },
@@ -153,7 +200,7 @@ export default {
             },
           },
         },
-        400: { description: 'Invalid or expired token' },
+        400: { description: 'Invalid or expired code' },
       },
     },
   },

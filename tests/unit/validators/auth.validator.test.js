@@ -11,7 +11,7 @@ import { runValidator } from './helpers.js';
 describe('Auth Validators', () => {
   describe('signupValidator', () => {
     const VALID_SIGNUP = {
-      email: 'new@staffclock.com',
+      email: 'new@mtn-company.rw',
       password: 'StrongP@ss1',
       firstName: 'Alice',
       lastName: 'Wonder',
@@ -121,23 +121,30 @@ describe('Auth Validators', () => {
   });
 
   describe('resetPasswordValidator', () => {
-    it('should pass with valid token and password', async () => {
+    it('should pass with valid email, OTP, and password', async () => {
       const { isValid } = await runValidator(resetPasswordValidator, {
-        body: { token: 'a'.repeat(64), password: 'NewPass1!' },
+        body: { email: 'user@test.com', otp: '123456', password: 'NewPass1!' },
       });
       expect(isValid).to.be.true;
     });
 
-    it('should reject token shorter than 32 chars', async () => {
+    it('should reject non-numeric OTP', async () => {
       const { isValid } = await runValidator(resetPasswordValidator, {
-        body: { token: 'short', password: 'NewPass1!' },
+        body: { email: 'user@test.com', otp: 'abcdef', password: 'NewPass1!' },
+      });
+      expect(isValid).to.be.false;
+    });
+
+    it('should reject OTP with wrong length', async () => {
+      const { isValid } = await runValidator(resetPasswordValidator, {
+        body: { email: 'user@test.com', otp: '12345', password: 'NewPass1!' },
       });
       expect(isValid).to.be.false;
     });
 
     it('should enforce password rules on reset', async () => {
       const { isValid } = await runValidator(resetPasswordValidator, {
-        body: { token: 'a'.repeat(64), password: 'weak' },
+        body: { email: 'user@test.com', otp: '123456', password: 'weak' },
       });
       expect(isValid).to.be.false;
     });
@@ -146,56 +153,58 @@ describe('Auth Validators', () => {
   describe('changePasswordValidator', () => {
     it('should pass with matching passwords', async () => {
       const { isValid } = await runValidator(changePasswordValidator, {
-        body: {
-          currentPassword: 'OldPass1!',
-          newPassword: 'NewPass1!',
-          confirmPassword: 'NewPass1!',
-        },
+        body: { currentPassword: 'OldPass1!', newPassword: 'NewPass1!', confirmPassword: 'NewPass1!' },
       });
       expect(isValid).to.be.true;
     });
 
     it('should reject mismatched confirmPassword', async () => {
       const { isValid } = await runValidator(changePasswordValidator, {
-        body: {
-          currentPassword: 'OldPass1!',
-          newPassword: 'NewPass1!',
-          confirmPassword: 'Different1!',
-        },
+        body: { currentPassword: 'OldPass1!', newPassword: 'NewPass1!', confirmPassword: 'Different1!' },
       });
       expect(isValid).to.be.false;
     });
 
     it('should reject weak new password', async () => {
       const { isValid } = await runValidator(changePasswordValidator, {
-        body: {
-          currentPassword: 'OldPass1!',
-          newPassword: 'weak',
-          confirmPassword: 'weak',
-        },
+        body: { currentPassword: 'OldPass1!', newPassword: 'weak', confirmPassword: 'weak' },
       });
       expect(isValid).to.be.false;
     });
   });
 
   describe('verifyEmailValidator', () => {
-    it('should accept valid token', async () => {
+    it('should accept valid email + 6-digit OTP', async () => {
       const { isValid } = await runValidator(verifyEmailValidator, {
-        query: { token: 'a'.repeat(64) },
+        body: { email: 'user@test.com', otp: '654321' },
       });
       expect(isValid).to.be.true;
     });
 
-    it('should reject empty token', async () => {
+    it('should reject empty OTP', async () => {
       const { isValid } = await runValidator(verifyEmailValidator, {
-        query: { token: '' },
+        body: { email: 'user@test.com', otp: '' },
       });
       expect(isValid).to.be.false;
     });
 
-    it('should reject token shorter than 32 chars', async () => {
+    it('should reject OTP that is not exactly 6 digits', async () => {
+      const r1 = await runValidator(verifyEmailValidator, { body: { email: 'u@t.com', otp: '123' } });
+      const r2 = await runValidator(verifyEmailValidator, { body: { email: 'u@t.com', otp: '1234567' } });
+      expect(r1.isValid).to.be.false;
+      expect(r2.isValid).to.be.false;
+    });
+
+    it('should reject non-numeric OTP', async () => {
       const { isValid } = await runValidator(verifyEmailValidator, {
-        query: { token: 'abc' },
+        body: { email: 'user@test.com', otp: 'abcdef' },
+      });
+      expect(isValid).to.be.false;
+    });
+
+    it('should reject missing email', async () => {
+      const { isValid } = await runValidator(verifyEmailValidator, {
+        body: { otp: '123456' },
       });
       expect(isValid).to.be.false;
     });

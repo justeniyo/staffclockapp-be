@@ -7,10 +7,11 @@ class AuthController {
   }
 
   signup      = wrap(async (req, res) => this.respond(res, await this.auth.signup(req.body), HTTP_STATUS.CREATED));
-  verifyEmail = wrap(async (req, res) => this.respond(res, await this.auth.verifyEmail(req.query.token)));
+  verifyEmail = wrap(async (req, res) => this.respond(res, await this.auth.verifyEmail(req.body.email, req.body.otp)));
   resendVerification = wrap(async (req, res) => this.respond(res, await this.auth.resendVerification(req.body.email)));
   forgotPassword     = wrap(async (req, res) => this.respond(res, await this.auth.forgotPassword(req.body.email)));
-  resetPassword      = wrap(async (req, res) => this.respond(res, await this.auth.resetPassword(req.body.token, req.body.password)));
+  verifyResetOtp     = wrap(async (req, res) => this.respond(res, await this.auth.verifyResetOtp(req.body.email, req.body.otp)));
+  resetPassword      = wrap(async (req, res) => this.respond(res, await this.auth.resetPassword(req.body.email, req.body.otp, req.body.password)));
   login       = wrap(async (req, res) => this.respond(res, await this.auth.login(req.body.email, req.body.password), 200, 'Login successful'));
   logout      = (_req, res) => res.json({ success: true, message: 'Logout successful' });
   getProfile  = wrap(async (req, res) => this.respond(res, await this.auth.getProfile(req.user.id), 200, 'Profile retrieved', true));

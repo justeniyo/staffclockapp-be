@@ -6,6 +6,7 @@ import {
   verifyEmailValidator,
   resendVerificationValidator,
   forgotPasswordValidator,
+  verifyResetOtpValidator,
   resetPasswordValidator,
   changePasswordValidator,
 } from '../validators/index.js';
@@ -13,15 +14,14 @@ import {
 const createAuthRoutes = (authController) => {
   const router = Router();
 
-  // Public routes
   router.post('/signup', signupValidator, validate, authController.signup);
-  router.get('/verify-email', verifyEmailValidator, validate, authController.verifyEmail);
+  router.post('/verify-email', verifyEmailValidator, validate, authController.verifyEmail);
   router.post('/resend-verification', resendVerificationValidator, validate, authController.resendVerification);
   router.post('/forgot-password', forgotPasswordValidator, validate, authController.forgotPassword);
+  router.post('/verify-reset-otp', verifyResetOtpValidator, validate, authController.verifyResetOtp);
   router.post('/reset-password', resetPasswordValidator, validate, authController.resetPassword);
   router.post('/login', loginValidator, validate, authController.login);
 
-  // Protected routes
   router.post('/logout', authenticate, authController.logout);
   router.get('/me', authenticate, authController.getProfile);
   router.put('/password', authenticate, changePasswordValidator, validate, authController.changePassword);

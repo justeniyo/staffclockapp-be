@@ -21,7 +21,7 @@ export const createMockSequelize = () => {
  */
 export const createMockUser = (overrides = {}) => ({
   id: 1,
-  email: 'test@staffclock.com',
+  email: 'test@mtn-company.rw',
   password: '$2a$10$hashedpassword',
   firstName: 'Test',
   lastName: 'User',
@@ -45,7 +45,7 @@ export const createMockUser = (overrides = {}) => ({
 export const createMockAdmin = (overrides = {}) =>
   createMockUser({
     id: 2,
-    email: 'admin@staffclock.com',
+    email: 'admin@mtn-company.rw',
     firstName: 'Admin',
     lastName: 'User',
     role: ROLES.ADMIN,
@@ -60,7 +60,7 @@ export const createMockAdmin = (overrides = {}) =>
 export const createMockCeo = (overrides = {}) =>
   createMockUser({
     id: 3,
-    email: 'ceo@staffclock.com',
+    email: 'ceo@mtn-company.rw',
     firstName: 'CEO',
     lastName: 'User',
     role: ROLES.CEO,

@@ -2,7 +2,7 @@ import { body, param, query } from 'express-validator';
 import { VALID_ROLES, VALID_STATUSES } from '../config/constants.js';
 import {
   NAME_MIN, NAME_MAX, PASSWORD_MIN, PASSWORD_MAX,
-  PHONE_REGEX, isValidName, hasEnoughDigits,
+  isValidName, isValidPhone, normalisePhone,
 } from './patterns.js';
 
 export const createUserValidator = [
@@ -43,8 +43,8 @@ export const createUserValidator = [
   body('phone')
     .optional({ values: 'falsy' })
     .trim()
-    .matches(PHONE_REGEX).withMessage('Phone must contain 7-15 digits with optional + prefix')
-    .custom(hasEnoughDigits).withMessage('Phone number must have 7-15 digits'),
+    .custom(isValidPhone).withMessage('Please enter a valid phone number (e.g. +250 788 123 456 or 0788123456)')
+    .customSanitizer((v) => normalisePhone(v) || v),
 
   body('departmentId')
     .optional({ values: 'falsy' })
@@ -95,8 +95,8 @@ export const updateUserValidator = [
   body('phone')
     .optional({ values: 'falsy' })
     .trim()
-    .matches(PHONE_REGEX).withMessage('Phone must contain 7-15 digits with optional + prefix')
-    .custom(hasEnoughDigits).withMessage('Phone number must have 7-15 digits'),
+    .custom(isValidPhone).withMessage('Please enter a valid phone number (e.g. +250 788 123 456 or 0788123456)')
+    .customSanitizer((v) => normalisePhone(v) || v),
 
   body('departmentId')
     .optional({ values: 'falsy' })

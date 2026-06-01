@@ -188,10 +188,10 @@ APP_URL=http://localhost:3000
 
 | Email | Password | Role |
 |-------|----------|------|
-| ceo@staffclock.com | Password123 | CEO |
-| admin@staffclock.com | Password123 | Admin |
-| security1@staffclock.com | Password123 | Security |
-| developer1@staffclock.com | Password123 | Staff |
+| ceo@mtn-company.rw | Password123 | CEO |
+| admin@mtn-company.rw | Password123 | Admin |
+| security1@mtn-company.rw | Password123 | Security |
+| developer1@mtn-company.rw | Password123 | Staff |
 
 ## Scripts
 

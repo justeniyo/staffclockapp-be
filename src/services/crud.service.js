@@ -1,16 +1,13 @@
 import { Op } from 'sequelize';
 import { AppError } from '../utils/index.js';
 
-/**
- * Generic CRUD service for simple name-based resources (Department, Location).
- * Subclass and override `modelName`, `fkField`, and `label` to customize.
- */
+// Generic CRUD service for simple name-based resources (Department, Location).
 class CrudService {
   constructor(db, { modelName, fkField, label }) {
     this.db = db;
     this.modelName = modelName;
-    this.fkField = fkField;   // e.g. 'departmentId' or 'locationId'
-    this.label = label;       // e.g. 'Department' or 'Location'
+    this.fkField = fkField;
+    this.label = label;
   }
 
   get model() { return this.db[this.modelName]; }

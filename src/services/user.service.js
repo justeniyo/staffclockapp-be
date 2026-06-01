@@ -5,21 +5,11 @@ import { ROLES, USER_STATUS } from '../config/constants.js';
 import config from '../config/environment.js';
 import emailService from '../emails/email.service.js';
 
-/**
- * User service
- * Handles user CRUD operations and related business logic
- */
 class UserService {
   constructor(db) {
     this.db = db;
   }
 
-  /**
-   * Creates a new user
-   * @param {Object} userData - User data
-   * @param {string} creatorRole - Role of the creating user
-   * @returns {Promise<Object>} Created user
-   */
   async create(userData, creatorRole) {
     const { User, Department, Location } = this.db;
 
@@ -37,11 +27,10 @@ class UserService {
       throw AppError.conflict('Email already registered');
     }
 
-    // Validate relationships
     await this.validateRelationships(userData);
 
-    // Generate verification token (same as auth signup flow)
-    const verificationToken = crypto.randomBytes(32).toString('hex');
+    // 6-digit OTP for admin-created users (same flow as self-signup)
+    const otp = String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
     const verificationExpires = new Date(
       Date.now() + config.verification.tokenExpiry * 60 * 60 * 1000
     );
@@ -50,26 +39,19 @@ class UserService {
       ...userData,
       status: USER_STATUS.INACTIVE,
       isVerified: false,
-      verificationToken,
+      verificationToken: otp,
       verificationExpires,
     });
 
-    // Send verification email
     try {
-      await emailService.sendAccountCreated(user, verificationToken, userData.password);
+      await emailService.sendAccountCreated(user, otp, userData.password);
     } catch (err) {
       console.warn('Failed to send verification email:', err.message);
-      // Don't fail user creation if email fails
     }
 
     return this.findById(user.id);
   }
 
-  /**
-   * Finds user by ID with associations
-   * @param {number} id - User ID
-   * @returns {Promise<Object>} User with associations
-   */
   async findById(id) {
     const { User, Department, Location } = this.db;
 
@@ -93,11 +75,6 @@ class UserService {
     return user;
   }
 
-  /**
-   * Lists users with filtering and pagination
-   * @param {Object} options - Query options
-   * @returns {Promise<Object>} Paginated users
-   */
   async findAll(options = {}) {
     const { User, Department, Location } = this.db;
     const { page, limit, offset } = Pagination.parse(options);
@@ -120,13 +97,6 @@ class UserService {
     return Pagination.format(rows, count, { page, limit });
   }
 
-  /**
-   * Updates user by ID
-   * @param {number} id - User ID
-   * @param {Object} updateData - Data to update
-   * @param {string} updaterRole - Role of the updating user
-   * @returns {Promise<Object>} Updated user
-   */
   async update(id, updateData, updaterRole) {
     const { User } = this.db;
 
@@ -158,12 +128,6 @@ class UserService {
     return this.findById(id);
   }
 
-  /**
-   * Deletes user by ID
-   * @param {number} id - User ID
-   * @param {string} deleterRole - Role of the deleting user
-   * @returns {Promise<Object>} Deletion result
-   */
   async delete(id, deleterRole) {
     const { User } = this.db;
 
@@ -183,11 +147,6 @@ class UserService {
     return { message: 'User deleted successfully' };
   }
 
-  /**
-   * Gets direct reports of a user
-   * @param {number} managerId - Manager user ID
-   * @returns {Promise<Array>} Direct reports
-   */
   async getDirectReports(managerId) {
     const { User, Department, Location } = this.db;
 
@@ -207,11 +166,6 @@ class UserService {
     return users;
   }
 
-  /**
-   * Gets users by role
-   * @param {string} role - User role
-   * @returns {Promise<Array>} Users with the specified role
-   */
   async findByRole(role) {
     const { User, Department, Location } = this.db;
 
@@ -231,11 +185,6 @@ class UserService {
     return users;
   }
 
-  /**
-   * Builds Sequelize where clause from filter options
-   * @param {Object} options - Filter options
-   * @returns {Object} Sequelize where clause
-   */
   buildWhereClause(options) {
     const { role, status, departmentId, locationId, search } = options;
     const where = {};
@@ -256,12 +205,6 @@ class UserService {
     return where;
   }
 
-  /**
-   * Validates role change permissions
-   * @param {Object} user - Current user
-   * @param {Object} updateData - Update data
-   * @param {string} updaterRole - Updater's role
-   */
   validateRoleChange(user, updateData, updaterRole) {
     // Cannot assign CEO role unless you're CEO
     if (updateData.role === ROLES.CEO && updaterRole !== ROLES.CEO) {
@@ -276,11 +219,6 @@ class UserService {
     }
   }
 
-  /**
-   * Validates foreign key relationships
-   * @param {Object} data - Data containing relationship IDs
-   * @param {number} userId - Current user ID (for self-reference check)
-   */
   async validateRelationships(data, userId = null) {
     const { User, Department, Location } = this.db;
 

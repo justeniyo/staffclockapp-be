@@ -1,14 +1,8 @@
-/**
- * Higher-order function that wraps async controller methods to auto-catch errors.
- * Replaces manual try/catch + next(error) in every method.
- */
+// Wraps async controller methods so thrown errors flow to Express's next().
 export const wrap = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
 
-/**
- * Factory: creates a standard CRUD controller for simple resources
- * (Department, Location, or any service with create/findAll/findById/update/delete).
- */
+// Factory for simple CRUD controllers.
 export function createCrudController(ServiceClass) {
   return {
     create: wrap(async (req, res) => {
@@ -36,7 +30,7 @@ export function createCrudController(ServiceClass) {
       res.json({ success: true, message: result.message });
     }),
 
-    /** Middleware: attaches the service instance to req for the handlers above */
+    // Attaches the service instance to req for the handlers above.
     attachService: (service) => (req, _res, next) => {
       req.service = service;
       next();

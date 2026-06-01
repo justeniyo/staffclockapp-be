@@ -33,7 +33,7 @@ module.exports = {
     // Insert CEO first
     await queryInterface.bulkInsert('users', [
       baseUser({
-        email: 'ceo@mtn-company.co.rw',
+        email: 'ceo@mtn-company.rw',
         first_name: 'John',
         last_name: 'Executive',
         role: 'ceo',
@@ -46,14 +46,14 @@ module.exports = {
     ]);
 
     const [ceo] = await queryInterface.sequelize.query(
-      "SELECT id FROM users WHERE email = 'ceo@mtn-company.co.rw'",
+      "SELECT id FROM users WHERE email = 'ceo@mtn-company.rw'",
       { type: queryInterface.sequelize.QueryTypes.SELECT }
     );
 
     // Insert Admin
     await queryInterface.bulkInsert('users', [
       baseUser({
-        email: 'admin@mtn-company.co.rw',
+        email: 'admin@mtn-company.rw',
         first_name: 'Sarah',
         last_name: 'Administrator',
         role: 'admin',
@@ -66,14 +66,14 @@ module.exports = {
     ]);
 
     const [admin] = await queryInterface.sequelize.query(
-      "SELECT id FROM users WHERE email = 'admin@mtn-company.co.rw'",
+      "SELECT id FROM users WHERE email = 'admin@mtn-company.rw'",
       { type: queryInterface.sequelize.QueryTypes.SELECT }
     );
 
     // Insert IT Manager
     await queryInterface.bulkInsert('users', [
       baseUser({
-        email: 'it.manager@mtn-company.co.rw',
+        email: 'it.manager@mtn-company.rw',
         first_name: 'David',
         last_name: 'TechLead',
         role: 'staff',
@@ -86,18 +86,18 @@ module.exports = {
     ]);
 
     const [itManager] = await queryInterface.sequelize.query(
-      "SELECT id FROM users WHERE email = 'it.manager@mtn-company.co.rw'",
+      "SELECT id FROM users WHERE email = 'it.manager@mtn-company.rw'",
       { type: queryInterface.sequelize.QueryTypes.SELECT }
     );
 
     // Insert remaining users
     await queryInterface.bulkInsert('users', [
-      baseUser({ email: 'security1@mtn-company.co.rw', first_name: 'Mike', last_name: 'Guard', role: 'security', phone: '+250783443211', department_id: getDeptId('Security'), location_id: getLocId('Headquarters'), manager_id: admin.id }),
-      baseUser({ email: 'security2@mtn-company.co.rw', first_name: 'Tom', last_name: 'Watchman', role: 'security', phone: '+250782117836', department_id: getDeptId('Security'), location_id: getLocId('Branch Office'), manager_id: admin.id }),
-      baseUser({ email: 'developer1@mtn-company.co.rw', first_name: 'Alice', last_name: 'Developer', role: 'staff', phone: '+250788313922', department_id: getDeptId('IT'), location_id: getLocId('Technical Support'), manager_id: itManager.id }),
-      baseUser({ email: 'developer2@mtn-company.co.rw', first_name: 'Bob', last_name: 'Coder', role: 'staff', phone: '+250788316735', department_id: getDeptId('IT'), location_id: getLocId('Technical Support'), manager_id: itManager.id }),
-      baseUser({ email: 'sales1@mtn-company.co.rw', first_name: 'Emma', last_name: 'Seller', role: 'staff', phone: '+250788312666', department_id: getDeptId('Sales'), location_id: getLocId('Branch Office'), manager_id: admin.id }),
-      baseUser({ email: 'inactive@mtn-company.co.rw', first_name: 'Inactive', last_name: 'User', role: 'staff', status: 'inactive', phone: '+250788319956', department_id: getDeptId('Administration'), location_id: getLocId('Headquarters'), manager_id: admin.id }),
+      baseUser({ email: 'security1@mtn-company.rw', first_name: 'Mike', last_name: 'Guard', role: 'security', phone: '+250783443211', department_id: getDeptId('Security'), location_id: getLocId('Headquarters'), manager_id: admin.id }),
+      baseUser({ email: 'security2@mtn-company.rw', first_name: 'Tom', last_name: 'Watchman', role: 'security', phone: '+250782117836', department_id: getDeptId('Security'), location_id: getLocId('Branch Office'), manager_id: admin.id }),
+      baseUser({ email: 'developer1@mtn-company.rw', first_name: 'Alice', last_name: 'Developer', role: 'staff', phone: '+250788313922', department_id: getDeptId('IT'), location_id: getLocId('Technical Support'), manager_id: itManager.id }),
+      baseUser({ email: 'developer2@mtn-company.rw', first_name: 'Bob', last_name: 'Coder', role: 'staff', phone: '+250788316735', department_id: getDeptId('IT'), location_id: getLocId('Technical Support'), manager_id: itManager.id }),
+      baseUser({ email: 'sales1@mtn-company.rw', first_name: 'Emma', last_name: 'Seller', role: 'staff', phone: '+250788312666', department_id: getDeptId('Sales'), location_id: getLocId('Branch Office'), manager_id: admin.id }),
+      baseUser({ email: 'inactive@mtn-company.rw', first_name: 'Inactive', last_name: 'User', role: 'staff', status: 'inactive', phone: '+250788319956', department_id: getDeptId('Administration'), location_id: getLocId('Headquarters'), manager_id: admin.id }),
     ]);
   },
 

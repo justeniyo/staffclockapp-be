@@ -37,7 +37,7 @@ describe('UserService', () => {
 
   describe('create', () => {
     const userData = {
-      email: 'new@staffclock.com',
+      email: 'new@mtn-company.rw',
       password: 'Password123',
       firstName: 'New',
       lastName: 'User',

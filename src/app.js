@@ -7,71 +7,65 @@ import { buildSwaggerSpec } from './docs/index.js';
 import createRoutes from './routes/index.js';
 import { notFoundHandler, errorHandler } from './middleware/index.js';
 
-/**
- * Creates and configures Express application
- * @param {Object} options - App configuration options
- * @param {Object} options.db - Database models
- * @param {Object} options.services - Service instances
- * @param {Object} options.controllers - Controller instances
- * @returns {Promise<Express>} Configured Express app
- */
 const createApp = async ({ db, services, controllers }) => {
   const app = express();
 
-  // Store db instance for middleware access
   app.set('db', db);
+  if (config.isProduction) app.set('trust proxy', 1);
 
-  // Trust proxy for production (Heroku, etc.)
-  if (config.isProduction) {
-    app.set('trust proxy', 1);
-  }
-
-  // Security middleware
-  app.use(helmet({
-    contentSecurityPolicy: config.isProduction ? undefined : false,
-  }));
-
-  // CORS configuration
+  app.use(helmet({ contentSecurityPolicy: config.isProduction ? undefined : false }));
   app.use(cors({
     origin: config.cors.origin,
     credentials: config.cors.credentials,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   }));
-
-  // Body parsing
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-  // Build dynamic Swagger spec
   const swaggerSpec = await buildSwaggerSpec();
-
-  // API Documentation
   app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
     customCss: '.swagger-ui .topbar { display: none }',
     customSiteTitle: 'StaffClock API Docs',
   }));
-
-  // Swagger JSON endpoint
   app.get('/api/docs.json', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.send(swaggerSpec);
   });
 
-  // Health check endpoint
-  app.get('/health', (req, res) => {
-    res.json({
-      status: 'ok',
+  // Health probe — 200 when DB is reachable, 503 otherwise. Used by uptime monitors.
+  app.get('/health', async (req, res) => {
+    const startedAt = Date.now();
+    const checks = { app: 'ok', database: 'unknown' };
+
+    try {
+      await db.sequelize.authenticate();
+      checks.database = 'ok';
+    } catch (err) {
+      checks.database = 'error';
+      checks.databaseError = err.message;
+    }
+
+    const healthy = checks.database === 'ok';
+    const mem = process.memoryUsage();
+
+    res.status(healthy ? 200 : 503).json({
+      status: healthy ? 'ok' : 'degraded',
+      checks,
       timestamp: new Date().toISOString(),
       environment: config.env,
-      uptime: process.uptime(),
+      uptime: Math.floor(process.uptime()),
+      responseTimeMs: Date.now() - startedAt,
+      memory: {
+        rssMb: Math.round(mem.rss / 1024 / 1024),
+        heapUsedMb: Math.round(mem.heapUsed / 1024 / 1024),
+        heapTotalMb: Math.round(mem.heapTotal / 1024 / 1024),
+      },
+      version: process.env.npm_package_version || '1.0.0',
     });
   });
 
-  // API routes
   app.use('/api', createRoutes(controllers));
-
-  // Error handling
   app.use(notFoundHandler);
   app.use(errorHandler);
 

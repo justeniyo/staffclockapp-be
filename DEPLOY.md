@@ -188,7 +188,7 @@ Replace with your actual Render app URL from Step 2.4.
 - Unlimited bandwidth (no egress charges ever)
 - Commercial use allowed (unlike Vercel's free tier)
 - Global CDN — your React app loads instantly worldwide
-- The `_redirects` file in `public/` handles SPA routing automatically
+- SPA routing handled automatically via the `404.html` fallback (the Vite build copies `index.html` → `404.html` so unmatched routes still load the React app)
 - Auto-deploy on git push
 
 ---
@@ -212,11 +212,11 @@ Click **Save Changes** — Render redeploys automatically (~2 min).
 
 | Email | Password | Role |
 |-------|----------|------|
-| `ceo@staffclock.com` | `Password123` | CEO |
-| `admin@staffclock.com` | `Password123` | Admin |
-| `it.manager@staffclock.com` | `Password123` | Staff Manager |
-| `security1@staffclock.com` | `Password123` | Security |
-| `developer1@staffclock.com` | `Password123` | Staff |
+| `ceo@mtn-company.rw` | `Password123` | CEO |
+| `admin@mtn-company.rw` | `Password123` | Admin |
+| `it.manager@mtn-company.rw` | `Password123` | Staff Manager |
+| `security1@mtn-company.rw` | `Password123` | Security |
+| `developer1@mtn-company.rw` | `Password123` | Staff |
 
 3. If login works, you're done!
 
@@ -266,6 +266,18 @@ The backend repo includes `.github/workflows/keep-alive.yml`. To activate it:
 ---
 
 ## Troubleshooting
+
+### Cloudflare Pages: "Invalid _redirects configuration: Infinite loop detected"
+This false-positive validation error happens when the project is on Cloudflare's new Workers + Static Assets system (the error URL contains `/workers/scripts/`) and a `_redirects` file with `/* /index.html 200` is present.
+
+**The fix is already in this project**: the Vite build copies `index.html` → `404.html` during `npm run build`, and Cloudflare Pages automatically serves `404.html` for any unmatched route — so React Router's client-side routes work without any `_redirects` file.
+
+If you previously had `public/_redirects` from an older version, delete it and redeploy:
+```bash
+rm public/_redirects
+git add -A && git commit -m "Remove _redirects in favor of 404.html SPA fallback"
+git push
+```
 
 ### "Invalid credentials" on login
 The database may not have been seeded. Check Render's **Logs** tab. If migrations didn't run:

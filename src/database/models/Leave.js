@@ -25,20 +25,38 @@ class Leave extends Model {
           type: DataTypes.DATEONLY,
           allowNull: false,
           field: 'start_date',
+          validate: {
+            isDate: { msg: 'Start date must be a valid date' },
+          },
         },
         endDate: {
           type: DataTypes.DATEONLY,
           allowNull: false,
           field: 'end_date',
+          validate: {
+            isDate: { msg: 'End date must be a valid date' },
+            isAfterStart(value) {
+              if (value && this.startDate && new Date(value) < new Date(this.startDate)) {
+                throw new Error('End date must be on or after start date');
+              }
+            },
+          },
         },
         totalDays: {
           type: DataTypes.DECIMAL(4, 1),
           allowNull: false,
           field: 'total_days',
+          validate: {
+            min: { args: [0.5], msg: 'Total days must be at least 0.5' },
+            max: { args: [365], msg: 'Total days cannot exceed 365' },
+          },
         },
         reason: {
           type: DataTypes.TEXT,
           allowNull: true,
+          validate: {
+            len: { args: [0, 1000], msg: 'Reason must be 1000 characters or fewer' },
+          },
         },
         status: {
           type: DataTypes.ENUM(...LEAVE_STATUSES),

@@ -4,11 +4,6 @@ import { getAllowedRoles } from '../config/permissions.js';
 import { ApiResponse, AppError } from '../utils/index.js';
 import { USER_STATUS, ROLE_HIERARCHY } from '../config/constants.js';
 
-/**
- * Extracts JWT token from Authorization header
- * @param {Object} req - Express request object
- * @returns {string|null} Token or null
- */
 const extractToken = (req) => {
   const authHeader = req.headers.authorization;
 
@@ -61,11 +56,6 @@ export const authenticate = async (req, res, next) => {
   }
 };
 
-/**
- * Middleware factory to authorize based on allowed roles
- * @param {...string} allowedRoles - Roles that can access the resource
- * @returns {Function} Express middleware
- */
 export const authorize = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
@@ -80,12 +70,6 @@ export const authorize = (...allowedRoles) => {
   };
 };
 
-/**
- * Middleware factory to authorize based on resource permissions
- * @param {string} resource - Resource name
- * @param {string} action - Action name
- * @returns {Function} Express middleware
- */
 export const can = (resource, action) => {
   return (req, res, next) => {
     if (!req.user) {
@@ -118,11 +102,6 @@ export const can = (resource, action) => {
   };
 };
 
-/**
- * Middleware factory to check minimum role level
- * @param {string} minRole - Minimum required role
- * @returns {Function} Express middleware
- */
 export const requireMinRole = (minRole) => {
   return (req, res, next) => {
     if (!req.user) {
@@ -140,11 +119,6 @@ export const requireMinRole = (minRole) => {
   };
 };
 
-/**
- * Middleware to check if user owns the resource or has elevated permissions
- * @param {Function} getResourceUserId - Function to extract resource owner ID
- * @returns {Function} Express middleware
- */
 export const ownerOrAdmin = (getResourceUserId) => {
   return async (req, res, next) => {
     if (!req.user) {

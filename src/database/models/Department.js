@@ -22,8 +22,11 @@ class Department extends Model {
           },
         },
         description: {
-          type: DataTypes.STRING(255),
+          type: DataTypes.STRING(500),
           allowNull: true,
+          validate: {
+            len: { args: [0, 500], msg: 'Description must be 500 characters or fewer' },
+          },
         },
         isActive: {
           type: DataTypes.BOOLEAN,

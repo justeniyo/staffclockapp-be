@@ -21,12 +21,6 @@ export const validate = (req, res, next) => {
   next();
 };
 
-/**
- * Creates a validation middleware chain
- * Combines validators with the validate middleware
- * @param {Array} validators - Array of express-validator validators
- * @returns {Array} Middleware chain
- */
 export const withValidation = (validators) => {
   return [...validators, validate];
 };

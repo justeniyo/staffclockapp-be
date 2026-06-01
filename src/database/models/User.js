@@ -2,6 +2,7 @@ import { Model, DataTypes } from 'sequelize';
 import bcrypt from 'bcryptjs';
 import config from '../../config/environment.js';
 import { VALID_ROLES, VALID_STATUSES, ROLES, USER_STATUS, ROLE_HIERARCHY } from '../../config/constants.js';
+import { normalisePhone, isValidPhone } from '../../validators/patterns.js';
 
 class User extends Model {
   static initialize(sequelize) {
@@ -75,6 +76,13 @@ class User extends Model {
         phone: {
           type: DataTypes.STRING(20),
           allowNull: true,
+          validate: {
+            isValidPhone(value) {
+              if (value && !isValidPhone(value)) {
+                throw new Error('Please enter a valid phone number');
+              }
+            },
+          },
         },
         departmentId: {
           type: DataTypes.INTEGER,
@@ -139,10 +147,22 @@ class User extends Model {
             if (user.password) {
               user.password = await bcrypt.hash(user.password, config.bcrypt.rounds);
             }
+            if (user.phone) {
+              user.phone = normalisePhone(user.phone) || user.phone;
+            }
+            if (user.email) {
+              user.email = user.email.trim().toLowerCase();
+            }
           },
           beforeUpdate: async (user) => {
             if (user.changed('password')) {
               user.password = await bcrypt.hash(user.password, config.bcrypt.rounds);
+            }
+            if (user.changed('phone') && user.phone) {
+              user.phone = normalisePhone(user.phone) || user.phone;
+            }
+            if (user.changed('email') && user.email) {
+              user.email = user.email.trim().toLowerCase();
             }
           },
         },
@@ -172,19 +192,10 @@ class User extends Model {
     });
   }
 
-  /**
-   * Validates password against stored hash
-   * @param {string} password - Plain text password
-   * @returns {Promise<boolean>}
-   */
   async validatePassword(password) {
     return bcrypt.compare(password, this.password);
   }
 
-  /**
-   * Returns user data without sensitive fields
-   * @returns {Object}
-   */
   toSafeObject() {
     const values = this.toJSON();
     delete values.password;
@@ -195,77 +206,38 @@ class User extends Model {
     return values;
   }
 
-  /**
-   * Gets user's full name
-   * @returns {string}
-   */
   get fullName() {
     return `${this.firstName} ${this.lastName}`;
   }
 
-  /**
-   * Checks if user has specified role
-   * @param {string} role - Role to check
-   * @returns {boolean}
-   */
   hasRole(role) {
     return this.role === role;
   }
 
-  /**
-   * Checks if user is CEO
-   * @returns {boolean}
-   */
   isCeo() {
     return this.role === ROLES.CEO;
   }
 
-  /**
-   * Checks if user is Admin
-   * @returns {boolean}
-   */
   isAdmin() {
     return this.role === ROLES.ADMIN;
   }
 
-  /**
-   * Checks if user is Security
-   * @returns {boolean}
-   */
   isSecurity() {
     return this.role === ROLES.SECURITY;
   }
 
-  /**
-   * Checks if user is active
-   * @returns {boolean}
-   */
   isActive() {
     return this.status === USER_STATUS.ACTIVE;
   }
 
-  /**
-   * Gets user's role level from hierarchy
-   * @returns {number}
-   */
   getRoleLevel() {
     return ROLE_HIERARCHY[this.role] || 0;
   }
 
-  /**
-   * Checks if user has higher or equal role level than target
-   * @param {string} targetRole - Role to compare against
-   * @returns {boolean}
-   */
   hasMinimumRole(targetRole) {
     return this.getRoleLevel() >= (ROLE_HIERARCHY[targetRole] || 0);
   }
 
-  /**
-   * Checks if user can manage another user
-   * @param {User} targetUser - User to check
-   * @returns {boolean}
-   */
   canManage(targetUser) {
     if (this.isCeo()) return true;
     if (this.isAdmin() && targetUser.role !== ROLES.CEO) return true;

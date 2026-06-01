@@ -4,6 +4,7 @@ export {
   verifyEmailValidator,
   resendVerificationValidator,
   forgotPasswordValidator,
+  verifyResetOtpValidator,
   resetPasswordValidator,
   changePasswordValidator,
 } from './auth.validator.js';

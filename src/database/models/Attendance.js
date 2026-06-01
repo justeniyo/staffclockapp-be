@@ -18,11 +18,27 @@ class Attendance extends Model {
           type: DataTypes.DATE,
           allowNull: false,
           field: 'clock_in',
+          validate: {
+            isDate: { msg: 'Clock-in must be a valid date' },
+            notFuture(value) {
+              if (value && new Date(value) > new Date(Date.now() + 60000)) {
+                throw new Error('Clock-in cannot be in the future');
+              }
+            },
+          },
         },
         clockOut: {
           type: DataTypes.DATE,
           allowNull: true,
           field: 'clock_out',
+          validate: {
+            isDate: { msg: 'Clock-out must be a valid date' },
+            isAfterClockIn(value) {
+              if (value && this.clockIn && new Date(value) < new Date(this.clockIn)) {
+                throw new Error('Clock-out must be after clock-in');
+              }
+            },
+          },
         },
         breakStart: {
           type: DataTypes.DATE,
