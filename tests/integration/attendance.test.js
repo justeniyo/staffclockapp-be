@@ -1,7 +1,8 @@
 import { expect } from 'chai';
 import request from 'supertest';
 import sinon from 'sinon';
-import { createApp } from '../../src/app.js';
+import jwt from 'jsonwebtoken';
+import createApp from '../../src/app.js';
 import { createServices } from '../../src/services/index.js';
 import { createControllers } from '../../src/controllers/index.js';
 import { ATTENDANCE_STATUS } from '../../src/config/constants.js';
@@ -74,8 +75,8 @@ describe('Attendance API', () => {
     staffToken = 'Bearer mock-staff-token';
     adminToken = 'Bearer mock-admin-token';
 
-    // Mock JWT verification
-    sinon.stub(require('jsonwebtoken'), 'verify')
+    // Mock JWT verification (ES module - stub the imported namespace)
+    sinon.stub(jwt, 'verify')
       .callsFake((token) => {
         if (token === 'mock-staff-token') return { userId: 1, role: 'staff' };
         if (token === 'mock-admin-token') return { userId: 2, role: 'admin' };

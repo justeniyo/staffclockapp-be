@@ -6,6 +6,7 @@ import LeaveService from './leave.service.js';
 import DepartmentService from './department.service.js';
 import LocationService from './location.service.js';
 import ReportService from './report.service.js';
+import NotificationService from './notification.service.js';
 
 export const createServices = (db) => ({
   authService: new AuthService(db),
@@ -16,7 +17,8 @@ export const createServices = (db) => ({
   departmentService: new DepartmentService(db),
   locationService: new LocationService(db),
   reportService: new ReportService(db),
+  notificationService: new NotificationService(db),
 });
 
-export { AuthService, UserService, AttendanceService, ShiftService, LeaveService, DepartmentService, LocationService, ReportService };
+export { AuthService, UserService, AttendanceService, ShiftService, LeaveService, DepartmentService, LocationService, ReportService, NotificationService };
 export { default as CrudService } from './crud.service.js';

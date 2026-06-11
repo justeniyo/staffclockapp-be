@@ -23,7 +23,7 @@ class AttendanceService {
       throw AppError.conflict('Already clocked in. Please clock out first.');
     }
 
-    return Attendance.create({
+    const record = await Attendance.create({
       userId,
       clockIn: new Date(),
       status: ATTENDANCE_STATUS.CLOCKED_IN,
@@ -31,6 +31,7 @@ class AttendanceService {
       notes,
       ipAddress,
     });
+    return record;
   }
 
   async clockOut(userId) {
@@ -53,7 +54,8 @@ class AttendanceService {
       breakDuration,
     });
 
-    return active.reload({ include: this.getIncludes() });
+    const fresh = await active.reload({ include: this.getIncludes() });
+    return fresh;
   }
 
   async startBreak(userId) {
@@ -71,7 +73,8 @@ class AttendanceService {
       status: ATTENDANCE_STATUS.ON_BREAK,
     });
 
-    return active.reload();
+    const fresh = await active.reload();
+    return fresh;
   }
 
   async endBreak(userId) {
@@ -94,7 +97,8 @@ class AttendanceService {
       status: ATTENDANCE_STATUS.CLOCKED_IN,
     });
 
-    return active.reload();
+    const fresh = await active.reload();
+    return fresh;
   }
 
   async getStatus(userId) {
@@ -209,9 +213,15 @@ class AttendanceService {
   }
 
   getIncludes() {
-    const { User, Location } = this.db;
+    const { User, Location, Department } = this.db;
     return [
-      { model: User, as: 'user', attributes: ['id', 'firstName', 'lastName', 'email'] },
+      { model: User, as: 'user',
+        attributes: ['id', 'firstName', 'lastName', 'email', 'departmentId', 'locationId', 'managerId'],
+        include: [
+          { model: Department, as: 'department', attributes: ['id', 'name'] },
+          { model: Location,   as: 'location',   attributes: ['id', 'name'] },
+        ],
+      },
       { model: Location, as: 'location', attributes: ['id', 'name'] },
     ];
   }

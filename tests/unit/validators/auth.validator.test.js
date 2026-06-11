@@ -5,6 +5,9 @@ import {
   resetPasswordValidator,
   changePasswordValidator,
   verifyEmailValidator,
+  verifyResetOtpValidator,
+  resendVerificationValidator,
+  forgotPasswordValidator,
 } from '../../../src/validators/auth.validator.js';
 import { runValidator } from './helpers.js';
 
@@ -207,6 +210,50 @@ describe('Auth Validators', () => {
         body: { otp: '123456' },
       });
       expect(isValid).to.be.false;
+    });
+  });
+
+  describe('verifyResetOtpValidator', () => {
+    it('should accept valid email + 6-digit OTP', async () => {
+      const { isValid } = await runValidator(verifyResetOtpValidator, {
+        body: { email: 'user@test.com', otp: '654321' },
+      });
+      expect(isValid).to.be.true;
+    });
+
+    it('should reject missing OTP', async () => {
+      const { isValid } = await runValidator(verifyResetOtpValidator, {
+        body: { email: 'user@test.com' },
+      });
+      expect(isValid).to.be.false;
+    });
+
+    it('should reject letters in OTP', async () => {
+      const { isValid } = await runValidator(verifyResetOtpValidator, {
+        body: { email: 'user@test.com', otp: '12a456' },
+      });
+      expect(isValid).to.be.false;
+    });
+  });
+
+  describe('forgotPasswordValidator / resendVerificationValidator', () => {
+    it('should accept valid email', async () => {
+      const r1 = await runValidator(forgotPasswordValidator, { body: { email: 'user@test.com' } });
+      const r2 = await runValidator(resendVerificationValidator, { body: { email: 'user@test.com' } });
+      expect(r1.isValid).to.be.true;
+      expect(r2.isValid).to.be.true;
+    });
+
+    it('should reject missing email', async () => {
+      const r1 = await runValidator(forgotPasswordValidator, { body: {} });
+      const r2 = await runValidator(resendVerificationValidator, { body: {} });
+      expect(r1.isValid).to.be.false;
+      expect(r2.isValid).to.be.false;
+    });
+
+    it('should reject malformed email', async () => {
+      const r1 = await runValidator(forgotPasswordValidator, { body: { email: 'plaintext' } });
+      expect(r1.isValid).to.be.false;
     });
   });
 });

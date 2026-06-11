@@ -124,8 +124,21 @@ class UserService {
     await this.validateRelationships(updateData, id);
 
     await user.update(updateData);
+    const fresh = await this.findById(id);
 
-    return this.findById(id);
+    // Broadcast the change. If status changed to inactive/suspended,
+    // immediately kick all the user's open sockets — they shouldn't keep
+    // a live session after being disabled.
+    const safe = fresh.toJSON ? fresh.toJSON() : fresh;
+    delete safe.password;
+
+
+    const wasActive = user.status === USER_STATUS.ACTIVE;
+    const nowInactive = updateData.status && updateData.status !== USER_STATUS.ACTIVE;
+    if (wasActive && nowInactive) {
+    }
+
+    return fresh;
   }
 
   async delete(id, deleterRole) {

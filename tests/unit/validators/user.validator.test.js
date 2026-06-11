@@ -137,7 +137,7 @@ describe('User Validators', () => {
       expect(isValid).to.be.false;
     });
 
-    // ── Phone ──
+    // ── Phone (validated via libphonenumber-js, default region RW) ──
     it('should accept E.164 phone format', async () => {
       const { isValid } = await runValidator(createUserValidator, {
         body: { ...VALID_USER, phone: '+250788123456' },
@@ -145,14 +145,21 @@ describe('User Validators', () => {
       expect(isValid).to.be.true;
     });
 
-    it('should accept formatted phone with parens and dashes', async () => {
+    it('should accept local Rwandan number (no + prefix)', async () => {
       const { isValid } = await runValidator(createUserValidator, {
-        body: { ...VALID_USER, phone: '(555) 123-4567' },
+        body: { ...VALID_USER, phone: '0788123456' },
       });
       expect(isValid).to.be.true;
     });
 
-    it('should reject phone with fewer than 7 digits', async () => {
+    it('should accept formatted international phone', async () => {
+      const { isValid } = await runValidator(createUserValidator, {
+        body: { ...VALID_USER, phone: '+1 202 555 0123' },
+      });
+      expect(isValid).to.be.true;
+    });
+
+    it('should reject phone that is too short to be a real number', async () => {
       const { isValid } = await runValidator(createUserValidator, {
         body: { ...VALID_USER, phone: '12345' },
       });
@@ -162,6 +169,13 @@ describe('User Validators', () => {
     it('should reject phone that is all formatting chars', async () => {
       const { isValid } = await runValidator(createUserValidator, {
         body: { ...VALID_USER, phone: '(((---)))' },
+      });
+      expect(isValid).to.be.false;
+    });
+
+    it('should reject random letters', async () => {
+      const { isValid } = await runValidator(createUserValidator, {
+        body: { ...VALID_USER, phone: 'not-a-phone' },
       });
       expect(isValid).to.be.false;
     });

@@ -140,7 +140,7 @@ describe('DepartmentService', () => {
       const result = await departmentService.findAll({ page: 1, limit: 20 });
 
       expect(result.data).to.have.length(1);
-      expect(result.total).to.equal(1);
+      expect(result.pagination.total).to.equal(1);
     });
 
     it('should filter by search term', async () => {

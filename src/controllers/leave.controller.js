@@ -13,6 +13,7 @@ class LeaveController {
   approve    = wrap(async (req, res) => ApiResponse.success(res, { data: await this.svc.approve(req.params.id, req.user.id, req.body.notes), message: 'Leave approved' }));
   reject     = wrap(async (req, res) => ApiResponse.success(res, { data: await this.svc.reject(req.params.id, req.user.id, req.body.notes), message: 'Leave rejected' }));
   cancel     = wrap(async (req, res) => ApiResponse.success(res, { data: await this.svc.cancel(req.params.id, req.user.id), message: 'Leave cancelled' }));
+  updateOwn  = wrap(async (req, res) => ApiResponse.success(res, { data: await this.svc.updateOwn(req.params.id, req.user.id, req.body), message: 'Leave updated' }));
   getBalance = wrap(async (req, res) => ApiResponse.success(res, { data: await this.svc.getBalance(req.params.userId || req.user.id, req.query.year) }));
 }
 

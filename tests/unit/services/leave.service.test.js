@@ -52,7 +52,6 @@ describe('LeaveService', () => {
         type: 'annual',
         startDate: '2024-01-15',
         endDate: '2024-01-19',
-        reason: 'Vacation',
       });
 
       expect(mockDb.Leave.create.calledOnce).to.be.true;
@@ -87,6 +86,67 @@ describe('LeaveService', () => {
         expect(error.statusCode).to.equal(409);
         expect(error.message).to.include('overlaps');
       }
+    });
+
+    it('should require a reason for personal/unpaid/other leave', async () => {
+      mockDb.Leave.findOne.resolves(null);
+      for (const type of ['personal', 'unpaid', 'other']) {
+        try {
+          await leaveService.create(1, {
+            type,
+            startDate: '2024-02-01',
+            endDate: '2024-02-02',
+          });
+          expect.fail(`${type} should have required a reason`);
+        } catch (error) {
+          expect(error.statusCode).to.equal(400);
+          expect(error.message).to.include('reason');
+        }
+      }
+    });
+
+    it('should reject whitespace-only reason as missing', async () => {
+      mockDb.Leave.findOne.resolves(null);
+      try {
+        await leaveService.create(1, {
+          type: 'personal',
+          startDate: '2024-02-01',
+          endDate: '2024-02-02',
+          reason: '   ',
+        });
+        expect.fail('whitespace reason should have been rejected');
+      } catch (error) {
+        expect(error.statusCode).to.equal(400);
+      }
+    });
+
+    it('should accept an optional reason on a type that does not require one', async () => {
+      mockDb.Leave.findOne.resolves(null);
+      mockDb.Leave.create.resolves(mockLeave);
+
+      await leaveService.create(1, {
+        type: 'annual',
+        startDate: '2024-01-15',
+        endDate: '2024-01-19',
+        reason: 'Going to a wedding',
+      });
+
+      const createCall = mockDb.Leave.create.getCall(0);
+      expect(createCall.args[0].reason).to.equal('Going to a wedding');
+    });
+
+    it('should store null when no reason is supplied for a non-required type', async () => {
+      mockDb.Leave.findOne.resolves(null);
+      mockDb.Leave.create.resolves(mockLeave);
+
+      await leaveService.create(1, {
+        type: 'annual',
+        startDate: '2024-01-15',
+        endDate: '2024-01-19',
+      });
+
+      const createCall = mockDb.Leave.create.getCall(0);
+      expect(createCall.args[0].reason).to.be.null;
     });
   });
 

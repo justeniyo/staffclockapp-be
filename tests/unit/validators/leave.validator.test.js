@@ -8,39 +8,32 @@ describe('Leave Validators', () => {
       type: 'annual',
       startDate: '2025-07-01',
       endDate: '2025-07-05',
-      reason: 'Family vacation',
     };
 
-    it('should pass with valid leave request', async () => {
+    it('should pass with the minimal required fields (no reason)', async () => {
       const { isValid } = await runValidator(createLeaveValidator, { body: VALID_LEAVE });
       expect(isValid).to.be.true;
     });
 
-    it('should pass without reason (optional)', async () => {
-      const body = { ...VALID_LEAVE };
-      delete body.reason;
-      const { isValid } = await runValidator(createLeaveValidator, { body });
-      expect(isValid).to.be.true;
+    it('should accept all defined leave types', async () => {
+      const types = ['annual', 'sick', 'personal', 'unpaid', 'maternity', 'paternity', 'bereavement', 'other'];
+      for (const type of types) {
+        const body = { ...VALID_LEAVE, type };
+        // Types that require a reason need one for validation to pass
+        if (['personal', 'unpaid', 'other'].includes(type)) body.reason = 'Has a reason';
+        const { isValid } = await runValidator(createLeaveValidator, { body });
+        expect(isValid, `type "${type}" should validate`).to.be.true;
+      }
     });
 
-    it('should reject invalid leave type', async () => {
+    it('should reject an unknown leave type', async () => {
       const { isValid } = await runValidator(createLeaveValidator, {
         body: { ...VALID_LEAVE, type: 'holiday' },
       });
       expect(isValid).to.be.false;
     });
 
-    it('should accept all valid leave types', async () => {
-      const types = ['annual', 'sick', 'personal', 'unpaid', 'maternity', 'paternity', 'bereavement', 'other'];
-      for (const type of types) {
-        const { isValid } = await runValidator(createLeaveValidator, {
-          body: { ...VALID_LEAVE, type },
-        });
-        expect(isValid, `type "${type}" should be valid`).to.be.true;
-      }
-    });
-
-    it('should reject invalid startDate format', async () => {
+    it('should reject non-ISO startDate', async () => {
       const { isValid } = await runValidator(createLeaveValidator, {
         body: { ...VALID_LEAVE, startDate: '07/01/2025' },
       });
@@ -54,18 +47,70 @@ describe('Leave Validators', () => {
       expect(isValid).to.be.false;
     });
 
-    it('should accept same-day leave (startDate == endDate)', async () => {
+    it('should accept same-day leave', async () => {
       const { isValid } = await runValidator(createLeaveValidator, {
         body: { ...VALID_LEAVE, startDate: '2025-07-01', endDate: '2025-07-01' },
       });
       expect(isValid).to.be.true;
     });
 
-    it('should reject reason over 1000 chars', async () => {
-      const { isValid } = await runValidator(createLeaveValidator, {
-        body: { ...VALID_LEAVE, reason: 'x'.repeat(1001) },
+    describe('reason policy', () => {
+      const REQUIRED = ['personal', 'unpaid', 'other'];
+      const NOT_REQUIRED = ['annual', 'sick', 'maternity', 'paternity', 'bereavement'];
+
+      it('should reject when reason is missing for a type that requires it', async () => {
+        for (const type of REQUIRED) {
+          const { isValid } = await runValidator(createLeaveValidator, {
+            body: { ...VALID_LEAVE, type },
+          });
+          expect(isValid, `${type} without reason should fail`).to.be.false;
+        }
       });
-      expect(isValid).to.be.false;
+
+      it('should reject when reason is empty string for a required type', async () => {
+        for (const type of REQUIRED) {
+          const { isValid } = await runValidator(createLeaveValidator, {
+            body: { ...VALID_LEAVE, type, reason: '' },
+          });
+          expect(isValid, `${type} with empty reason should fail`).to.be.false;
+        }
+      });
+
+      it('should reject when reason is only whitespace for a required type', async () => {
+        for (const type of REQUIRED) {
+          const { isValid } = await runValidator(createLeaveValidator, {
+            body: { ...VALID_LEAVE, type, reason: '    ' },
+          });
+          expect(isValid, `${type} with whitespace reason should fail`).to.be.false;
+        }
+      });
+
+      it('should pass without reason for types that do not require it', async () => {
+        for (const type of NOT_REQUIRED) {
+          const { isValid } = await runValidator(createLeaveValidator, {
+            body: { ...VALID_LEAVE, type },
+          });
+          expect(isValid, `${type} without reason should pass`).to.be.true;
+        }
+      });
+
+      it('should accept an optional reason on a non-required type', async () => {
+        const { isValid } = await runValidator(createLeaveValidator, {
+          body: { ...VALID_LEAVE, type: 'annual', reason: 'Going to a wedding' },
+        });
+        expect(isValid).to.be.true;
+      });
+
+      it('should reject reason over 1000 chars regardless of type', async () => {
+        const r1 = await runValidator(createLeaveValidator, {
+          body: { ...VALID_LEAVE, type: 'annual', reason: 'x'.repeat(1001) },
+        });
+        const r2 = await runValidator(createLeaveValidator, {
+          body: { ...VALID_LEAVE, type: 'personal', reason: 'x'.repeat(1001) },
+        });
+        expect(r1.isValid).to.be.false;
+        expect(r2.isValid).to.be.false;
+      });
     });
   });
 
@@ -75,28 +120,44 @@ describe('Leave Validators', () => {
       expect(isValid).to.be.true;
     });
 
-    it('should reject invalid status', async () => {
+    it('should reject an unknown status', async () => {
       const { isValid } = await runValidator(leaveQueryValidator, {
         query: { status: 'expired' },
       });
       expect(isValid).to.be.false;
     });
 
-    it('should reject invalid year', async () => {
-      const { isValid } = await runValidator(leaveQueryValidator, {
-        query: { year: '1900' },
-      });
-      expect(isValid).to.be.false;
+    it('should reject a year outside the allowed range', async () => {
+      const r1 = await runValidator(leaveQueryValidator, { query: { year: '1900' } });
+      const r2 = await runValidator(leaveQueryValidator, { query: { year: '2200' } });
+      expect(r1.isValid).to.be.false;
+      expect(r2.isValid).to.be.false;
     });
   });
 
   describe('reviewLeaveValidator', () => {
-    it('should pass with valid id and notes', async () => {
+    it('should pass with a valid id and notes', async () => {
       const { isValid } = await runValidator(reviewLeaveValidator, {
         params: { id: '5' },
         body: { notes: 'Approved by manager' },
       });
       expect(isValid).to.be.true;
+    });
+
+    it('should pass without notes (optional)', async () => {
+      const { isValid } = await runValidator(reviewLeaveValidator, {
+        params: { id: '5' },
+        body: {},
+      });
+      expect(isValid).to.be.true;
+    });
+
+    it('should reject a non-numeric id', async () => {
+      const { isValid } = await runValidator(reviewLeaveValidator, {
+        params: { id: 'abc' },
+        body: {},
+      });
+      expect(isValid).to.be.false;
     });
 
     it('should reject notes over 500 chars', async () => {

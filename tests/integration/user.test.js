@@ -1,16 +1,17 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
 import request from 'supertest';
-import { createServices } from '../../../src/services/index.js';
-import { createControllers } from '../../../src/controllers/index.js';
-import createApp from '../../../src/app.js';
+import { createServices } from '../../src/services/index.js';
+import { createControllers } from '../../src/controllers/index.js';
+import createApp from '../../src/app.js';
+import emailService from '../../src/emails/email.service.js';
 import {
   createMockUser,
   createMockAdmin,
   createMockCeo,
   createTestToken,
-} from '../../setup.js';
-import { ROLES, USER_STATUS } from '../../../src/config/constants.js';
+} from '../setup.js';
+import { ROLES, USER_STATUS } from '../../src/config/constants.js';
 
 describe('User API Integration', () => {
   let app;
@@ -35,6 +36,9 @@ describe('User API Integration', () => {
         findByPk: sandbox.stub(),
       },
     };
+
+    // Don't try to send real verification emails during user creation
+    sandbox.stub(emailService, 'sendAccountCreated').resolves();
 
     const services = createServices(mockDb);
     const controllers = createControllers(services);

@@ -1,39 +1,20 @@
 import { expect } from 'chai';
 import {
-  NAME_REGEX,
-  PHONE_REGEX,
   isValidName,
-  hasEnoughDigits,
+  isValidPhone,
+  normalisePhone,
   isEndDateAfterStart,
 } from '../../../src/validators/patterns.js';
 
 describe('Validation Patterns', () => {
-  describe('NAME_REGEX / isValidName', () => {
+  describe('isValidName', () => {
     const valid = [
-      'Alice',
-      'Jean-Pierre',
-      "O'Brien",
-      'María José',
-      'Dr. Smith',
-      'Müller',
-      'Élodie',
-      'Анна',          // Cyrillic
-      '田中',           // CJK
-      'Al',            // minimum 2 chars
-      'Mary Anne',     // space
-      "D'Arcy-Smith",  // apostrophe + hyphen combo
+      'Alice', 'Jean-Pierre', "O'Brien", 'María José', 'Dr. Smith',
+      'Müller', 'Élodie', 'Анна', '田中', 'Al', 'Mary Anne', "D'Arcy-Smith",
     ];
-
     const invalid = [
-      '',              // empty
-      'A',             // too short (1 char — but regex only checks pattern, length is separate)
-      '123',           // digits only
-      '@lice',         // starts with special
-      'Bob!',          // exclamation
-      'test@user',     // at sign
-      'Name<script>',  // HTML injection
-      '-Name',         // starts with hyphen
-      "'Name",         // starts with apostrophe
+      '', '123', '@lice', 'Bob!', 'test@user', 'Name<script>',
+      '-Name', "'Name",
     ];
 
     valid.forEach((name) => {
@@ -49,44 +30,57 @@ describe('Validation Patterns', () => {
     });
   });
 
-  describe('PHONE_REGEX / hasEnoughDigits', () => {
+  describe('isValidPhone (libphonenumber)', () => {
+    // Default region is RW. Numbers without "+" are parsed as Rwandan.
     const validPhones = [
-      { input: '+250788888888',    digits: 12 },
-      { input: '+1 234 567 8900',  digits: 11 },
-      { input: '(555) 123-4567',   digits: 10 },
-      { input: '0788888888',       digits: 10 },
-      { input: '+44 20 7946 0958', digits: 11 },
-      { input: '1234567',          digits: 7  },  // minimum
+      '+250788123456',     // E.164 Rwanda
+      '+12025550123',      // E.164 US
+      '+442079460958',     // E.164 UK
+      '0788123456',        // local Rwanda
+      '+250 788 123 456',  // formatted with spaces
+      '+1 (202) 555-0123', // formatted US
     ];
-
     const invalidPhones = [
-      { input: '123',              reason: 'too few digits (3)' },
-      { input: '12345',            reason: 'too few digits (5)' },
-      { input: '(((((',            reason: 'no digits at all' },
-      { input: '---',              reason: 'no digits' },
-      { input: '+',                reason: 'just a plus sign' },
-      { input: '',                 reason: 'empty' },
+      '',
+      '123',           // too short
+      '+',             // just a plus
+      '(((((',         // no digits
+      'abcdefghij',    // letters
+      '12345',         // not a real number
+      '+999999999999', // impossible country code
     ];
 
-    validPhones.forEach(({ input, digits }) => {
-      it(`should accept "${input}" (${digits} digits)`, () => {
-        expect(PHONE_REGEX.test(input)).to.be.true;
-        expect(hasEnoughDigits(input)).to.be.true;
+    validPhones.forEach((p) => {
+      it(`should accept "${p}"`, () => {
+        expect(isValidPhone(p)).to.be.true;
       });
     });
 
-    invalidPhones.forEach(({ input, reason }) => {
-      it(`should reject "${input}" — ${reason}`, () => {
-        // Either regex fails or digit count is wrong
-        const regexOk = PHONE_REGEX.test(input);
-        const digitsOk = hasEnoughDigits(input);
-        expect(regexOk && digitsOk).to.be.false;
+    invalidPhones.forEach((p) => {
+      it(`should reject "${p}"`, () => {
+        expect(isValidPhone(p)).to.be.false;
       });
     });
+  });
 
-    it('should reject phone with > 15 digits', () => {
-      const longPhone = '1234567890123456'; // 16 digits
-      expect(hasEnoughDigits(longPhone)).to.be.false;
+  describe('normalisePhone (E.164)', () => {
+    it('should normalise local Rwandan number to +250…', () => {
+      expect(normalisePhone('0788123456')).to.equal('+250788123456');
+    });
+
+    it('should strip spaces from already-international number', () => {
+      expect(normalisePhone('+250 788 123 456')).to.equal('+250788123456');
+    });
+
+    it('should keep a valid +1 US number', () => {
+      expect(normalisePhone('+1 202 555 0123')).to.equal('+12025550123');
+    });
+
+    it('should return null for invalid input', () => {
+      expect(normalisePhone('not-a-phone')).to.be.null;
+      expect(normalisePhone('')).to.be.null;
+      expect(normalisePhone(null)).to.be.null;
+      expect(normalisePhone(undefined)).to.be.null;
     });
   });
 
@@ -103,10 +97,11 @@ describe('Validation Patterns', () => {
 
     it('should reject endDate before startDate', () => {
       const req = { body: { startDate: '2025-06-10' } };
-      expect(() => isEndDateAfterStart('2025-06-05', { req })).to.throw('End date must be on or after start date');
+      expect(() => isEndDateAfterStart('2025-06-05', { req }))
+        .to.throw('End date must be on or after start date');
     });
 
-    it('should pass through if startDate is invalid (let isISO8601 handle it)', () => {
+    it('should pass through if startDate is invalid', () => {
       const req = { body: { startDate: 'not-a-date' } };
       expect(isEndDateAfterStart('2025-06-05', { req })).to.be.true;
     });

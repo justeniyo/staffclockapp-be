@@ -2,16 +2,16 @@ import { expect } from 'chai';
 import sinon from 'sinon';
 import request from 'supertest';
 import express from 'express';
-import { createServices } from '../../../src/services/index.js';
-import { createControllers } from '../../../src/controllers/index.js';
-import createApp from '../../../src/app.js';
+import { createServices } from '../../src/services/index.js';
+import { createControllers } from '../../src/controllers/index.js';
+import createApp from '../../src/app.js';
 import {
   createMockUser,
   createMockAdmin,
   hashPassword,
   createTestToken,
-} from '../../setup.js';
-import { USER_STATUS, ROLES } from '../../../src/config/constants.js';
+} from '../setup.js';
+import { USER_STATUS, ROLES } from '../../src/config/constants.js';
 
 describe('Auth API Integration', () => {
   let app;
@@ -238,6 +238,121 @@ describe('Auth API Integration', () => {
 
       expect(res.status).to.equal(200);
       expect(res.body.success).to.be.true;
+    });
+  });
+
+  describe('POST /api/auth/verify-email (OTP)', () => {
+    it('should activate an unverified user with the correct OTP', async () => {
+      const mockUser = {
+        ...createMockUser({
+          isVerified: false,
+          status: USER_STATUS.INACTIVE,
+          verificationToken: '123456',
+          verificationExpires: new Date(Date.now() + 3600_000),
+        }),
+        update: sandbox.stub().resolves(),
+      };
+      mockDb.User.findOne.resolves(mockUser);
+
+      const res = await request(app)
+        .post('/api/auth/verify-email')
+        .send({ email: 'test@staffclock.com', otp: '123456' });
+
+      expect(res.status).to.equal(200);
+      expect(res.body.success).to.be.true;
+      expect(res.body.message).to.match(/verified/i);
+    });
+
+    it('should reject when OTP is not 6 digits', async () => {
+      const res = await request(app)
+        .post('/api/auth/verify-email')
+        .send({ email: 'test@staffclock.com', otp: '123' });
+
+      expect(res.status).to.equal(400);
+      expect(res.body.success).to.be.false;
+    });
+
+    it('should reject when email is missing', async () => {
+      const res = await request(app)
+        .post('/api/auth/verify-email')
+        .send({ otp: '123456' });
+
+      expect(res.status).to.equal(400);
+    });
+  });
+
+  describe('POST /api/auth/forgot-password', () => {
+    it('should return a generic success for an unknown email (anti-enumeration)', async () => {
+      mockDb.User.findOne.resolves(null);
+
+      const res = await request(app)
+        .post('/api/auth/forgot-password')
+        .send({ email: 'nobody@test.com' });
+
+      expect(res.status).to.equal(200);
+      expect(res.body.success).to.be.true;
+      expect(res.body.message).to.match(/reset code/i);
+    });
+
+    it('should set a 6-digit OTP for an existing email', async () => {
+      const mockUser = { ...createMockUser(), update: sandbox.stub().resolves() };
+      mockDb.User.findOne.resolves(mockUser);
+
+      const res = await request(app)
+        .post('/api/auth/forgot-password')
+        .send({ email: 'test@staffclock.com' });
+
+      expect(res.status).to.equal(200);
+      const updateArgs = mockUser.update.firstCall.args[0];
+      expect(updateArgs.passwordResetToken).to.match(/^\d{6}$/);
+    });
+  });
+
+  describe('POST /api/auth/reset-password (OTP)', () => {
+    it('should update password with a valid email + OTP', async () => {
+      const mockUser = {
+        ...createMockUser({
+          passwordResetToken: '654321',
+          passwordResetExpires: new Date(Date.now() + 600_000),
+        }),
+        update: sandbox.stub().resolves(),
+      };
+      mockDb.User.findOne.resolves(mockUser);
+
+      const res = await request(app)
+        .post('/api/auth/reset-password')
+        .send({
+          email: 'test@staffclock.com',
+          otp: '654321',
+          password: 'NewPass1!',
+        });
+
+      expect(res.status).to.equal(200);
+      expect(res.body.success).to.be.true;
+    });
+
+    it('should reject a weak password', async () => {
+      const res = await request(app)
+        .post('/api/auth/reset-password')
+        .send({
+          email: 'test@staffclock.com',
+          otp: '654321',
+          password: 'weak',
+        });
+
+      expect(res.status).to.equal(400);
+    });
+
+    it('should reject an invalid OTP format', async () => {
+      const res = await request(app)
+        .post('/api/auth/reset-password')
+        .send({
+          email: 'test@staffclock.com',
+          otp: 'abcdef',
+          password: 'NewPass1!',
+        });
+
+      expect(res.status).to.equal(400);
     });
   });
 });

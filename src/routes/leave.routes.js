@@ -18,6 +18,7 @@ const createLeaveRoutes = (leaveController) => {
   router.get('/my', can('leaves', 'listOwn'), leaveQueryValidator, validate, leaveController.getOwn);
   router.get('/my/balance', can('leaves', 'readOwn'), balanceQueryValidator, validate, leaveController.getBalance);
   router.post('/:id/cancel', can('leaves', 'cancel'), leaveIdValidator, validate, leaveController.cancel);
+  router.put('/:id', can('leaves', 'cancel'), leaveIdValidator, createLeaveValidator, validate, leaveController.updateOwn);
 
   // Admin operations
   router.get('/', can('leaves', 'list'), leaveQueryValidator, validate, leaveController.getAll);

@@ -7,6 +7,7 @@ import createLeaveRoutes from './leave.routes.js';
 import createDepartmentRoutes from './department.routes.js';
 import createLocationRoutes from './location.routes.js';
 import createReportRoutes from './report.routes.js';
+import createNotificationRoutes from './notification.routes.js';
 
 const createRoutes = (controllers) => {
   const router = Router();
@@ -19,6 +20,7 @@ const createRoutes = (controllers) => {
   router.use('/departments', createDepartmentRoutes(controllers.departmentController));
   router.use('/locations', createLocationRoutes(controllers.locationController));
   router.use('/reports', createReportRoutes(controllers.reportController));
+  router.use('/notifications', createNotificationRoutes(controllers.notificationController));
 
   return router;
 };

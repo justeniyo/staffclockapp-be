@@ -46,6 +46,17 @@ export const LEAVE_TYPE = Object.freeze({
   OTHER: 'other',
 });
 
+// Types where the requester must give a written reason. Discretionary or
+// catch-all categories need context; statutory and self-evident types don't.
+export const LEAVE_TYPES_REQUIRING_REASON = Object.freeze([
+  LEAVE_TYPE.PERSONAL,
+  LEAVE_TYPE.UNPAID,
+  LEAVE_TYPE.OTHER,
+]);
+
+export const leaveTypeRequiresReason = (type) =>
+  LEAVE_TYPES_REQUIRING_REASON.includes(type);
+
 export const LEAVE_STATUS = Object.freeze({
   PENDING: 'pending',
   APPROVED: 'approved',

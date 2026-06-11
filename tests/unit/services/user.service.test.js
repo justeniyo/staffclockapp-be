@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
 import UserService from '../../../src/services/user.service.js';
+import emailService from '../../../src/emails/email.service.js';
 import { createMockUser, createMockAdmin, createMockCeo } from '../../setup.js';
 import { ROLES } from '../../../src/config/constants.js';
 
@@ -27,6 +28,8 @@ describe('UserService', () => {
         findByPk: sandbox.stub(),
       },
     };
+
+    sandbox.stub(emailService, 'sendAccountCreated').resolves();
 
     userService = new UserService(mockDb);
   });
@@ -130,7 +133,7 @@ describe('UserService', () => {
 
       const result = await userService.findAll({ page: 1, limit: 10 });
 
-      expect(result.items).to.have.length(2);
+      expect(result.data).to.have.length(2);
       expect(result.pagination.total).to.equal(2);
     });
 
@@ -144,8 +147,8 @@ describe('UserService', () => {
 
       const result = await userService.findAll({ role: ROLES.ADMIN });
 
-      expect(result.items).to.have.length(1);
-      expect(result.items[0].role).to.equal(ROLES.ADMIN);
+      expect(result.data).to.have.length(1);
+      expect(result.data[0].role).to.equal(ROLES.ADMIN);
     });
   });
 

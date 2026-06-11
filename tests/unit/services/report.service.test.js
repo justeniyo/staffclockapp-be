@@ -40,6 +40,9 @@ describe('ReportService', () => {
       // 8 hours = 480 minutes (full elapsed, no break subtracted)
       expect(result[0].workMinutes).to.equal(480);
       expect(result[0].workHours).to.equal('8.00');
+      // Datetimes are formatted as compact numeric strings
+      expect(result[0].clockIn).to.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
+      expect(result[0].clockOut).to.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
       // Break-related fields must NOT exist
       expect(result[0]).to.not.have.property('breakMinutes');
       expect(result[0]).to.not.have.property('breakDuration');
@@ -113,7 +116,7 @@ describe('ReportService', () => {
       const result = await reportService.getSummaryData({});
 
       expect(result).to.have.length(2);
-      const john = result.find((r) => r.employeeId === 1);
+      const john = result.find((r) => r.employeeId === 'staff_0000001');
       expect(john.totalDays).to.equal(2);
       expect(john.totalWorkMinutes).to.equal(960);
       expect(john.totalWorkHours).to.equal('16.00');

@@ -3,16 +3,19 @@ import { ROLES } from './constants.js';
 const { STAFF, ADMIN, SECURITY, CEO } = ROLES;
 const ALL_ROLES = [STAFF, ADMIN, SECURITY, CEO];
 const MANAGERS = [ADMIN, CEO];
+// Security needs read-only access to staff and attendance at their assigned
+// location so the Security Dashboard can monitor on-site activity.
+const MANAGERS_AND_SECURITY = [ADMIN, CEO, SECURITY];
 
 const permissions = Object.freeze({
   users: {
     create: MANAGERS,
-    read: MANAGERS,
+    read: MANAGERS_AND_SECURITY,
     readOwn: ALL_ROLES,
     update: MANAGERS,
     updateOwn: ALL_ROLES,
     delete: MANAGERS,
-    list: MANAGERS,
+    list: MANAGERS_AND_SECURITY,
     listByRole: MANAGERS,
     directReports: ALL_ROLES,
   },
@@ -39,8 +42,8 @@ const permissions = Object.freeze({
     startBreak: ALL_ROLES,
     endBreak: ALL_ROLES,
     viewOwn: ALL_ROLES,
-    viewAll: MANAGERS,
-    viewByUser: MANAGERS,
+    viewAll: MANAGERS_AND_SECURITY,
+    viewByUser: MANAGERS_AND_SECURITY,
     update: MANAGERS,
     delete: [CEO],
   },

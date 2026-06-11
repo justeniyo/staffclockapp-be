@@ -19,7 +19,8 @@ class ShiftService {
     if (existing) throw AppError.conflict('Shift already exists for this date');
 
     const shift = await Shift.create({ ...data, createdBy, status: SHIFT_STATUS.SCHEDULED });
-    return shift.reload({ include: this.getIncludes() });
+    const fresh = await shift.reload({ include: this.getIncludes() });
+    return fresh;
   }
 
   async createBulk(shifts, createdBy) {
@@ -118,7 +119,8 @@ class ShiftService {
     }
 
     await shift.update(data);
-    return shift.reload({ include: this.getIncludes() });
+    const fresh = await shift.reload({ include: this.getIncludes() });
+    return fresh;
   }
 
   async cancel(id) {
@@ -129,7 +131,8 @@ class ShiftService {
     }
 
     await shift.update({ status: SHIFT_STATUS.CANCELLED });
-    return shift.reload({ include: this.getIncludes() });
+    const fresh = await shift.reload({ include: this.getIncludes() });
+    return fresh;
   }
 
   async delete(id) {

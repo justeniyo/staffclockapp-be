@@ -6,6 +6,7 @@ import LeaveController from './leave.controller.js';
 import DepartmentController from './department.controller.js';
 import LocationController from './location.controller.js';
 import ReportController from './report.controller.js';
+import NotificationController from './notification.controller.js';
 
 export const createControllers = (services) => ({
   authController: new AuthController(services.authService),
@@ -16,6 +17,7 @@ export const createControllers = (services) => ({
   departmentController: new DepartmentController(services.departmentService),
   locationController: new LocationController(services.locationService),
   reportController: new ReportController(services.reportService),
+  notificationController: new NotificationController(services.notificationService),
 });
 
 export {
@@ -27,4 +29,5 @@ export {
   DepartmentController,
   LocationController,
   ReportController,
+  NotificationController,
 };
